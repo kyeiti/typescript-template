@@ -1,21 +1,16 @@
 import {NS} from "@ns";
 import {isServerHackable} from "/util/functions";
 
-export function collectAccessableServers(ns: NS) {
-    const servers: string[] = [];
+export function getAllServers(ns: NS) {
     const scans = ns.scan();
     for (const server of scans) {
-        if (ns.hasRootAccess(server)) {
-            servers.push(server);
-        }
-        const newScan = ns.scan(server);
-        for (const scan of newScan) {
-            if (!scans.includes(scan)) {
-                scans.push(scan);
-            }
-        }
+        scans.push(...ns.scan(server).filter(s => !scans.includes(s)));
     }
-    return servers;
+    return scans;
+}
+
+export function collectAccessibleServers(ns: NS) {
+    return getAllServers(ns).filter((s) =>  ns.hasRootAccess(s));
 }
 
 /**
@@ -23,18 +18,5 @@ export function collectAccessableServers(ns: NS) {
  * @returns string[]
  */
 export function collectHackableServers(ns: NS) {
-    const servers: string[] = [];
-    const scans = ns.scan();
-    for (const server of scans) {
-        if (isServerHackable(ns, server)) {
-            servers.push(server);
-        }
-        const newScan = ns.scan(server);
-        for (const scan of newScan) {
-            if (!scans.includes(scan)) {
-                scans.push(scan);
-            }
-        }
-    }
-    return servers;
+    return getAllServers(ns).filter((s) => isServerHackable(ns, s));
 }

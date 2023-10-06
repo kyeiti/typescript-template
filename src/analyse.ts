@@ -1,9 +1,9 @@
 import { isServerHackable } from '/util/functions'
-import {collectAccessableServers} from "/util/scan";
+import {collectAccessibleServers} from "/util/scan";
 import {NS} from "@ns";
 
 export async function main(ns: NS) {
-  const hosts = collectAccessableServers(ns);
+  const hosts = collectAccessibleServers(ns);
   const cores = 1;
   const threads = 1;
   const curHackLvl = ns.getHackingLevel(); // hacking level

@@ -1,10 +1,10 @@
 import {NS} from "@ns";
 import {hackServer} from '/util/functions'
-import {DEPLOYMENT, Script} from '/util/const'
-import {collectAccessableServers, collectHackableServers} from "/util/scan";
+import {DEPLOYMENT} from '/util/const'
+import {collectAccessibleServers, collectHackableServers} from "/util/scan";
 import {ArgFlagArg, ArgFlags} from "/util/args";
+import {Script} from "/util/Script";
 
-/** @param {NS} ns */
 export async function main(ns: NS) {
   ns.tprintf('Start...');
   const argv: ArgFlags = ns.flags(<ArgFlagArg>[
@@ -22,7 +22,7 @@ export async function main(ns: NS) {
   ns.tprintf(' ');
 
   ns.tprintf('Deploying and starting scripts...');
-  const servers = collectAccessableServers(ns);
+  const servers = collectAccessibleServers(ns);
 
   deployScripts(ns, servers, scripts);
   startScripts(ns, servers, scripts, target, restart);
@@ -71,20 +71,11 @@ function startScripts(ns: NS, servers: string[], scripts: string[], target: stri
         script = new Script(scriptName);
       }
 
-      const weight = cRemainingScripts > 1 ? script.weight / cRemainingScripts : 1;
-      const maxRam = ns.getServerMaxRam(server);
-      if(maxRam === 0) {
-        continue;
-      }
-      const usedRam = ns.getServerUsedRam(server)
-      const availableRam = maxRam - usedRam;
-      const scriptRam = ns.getScriptRam(scriptName, server);
-      const threads = Math.floor(availableRam / scriptRam * weight);
-      if (threads > 0) {
-        ns.exec(scriptName, server, threads, ...script.getArgsWithValues(ns, target ?? server));
-        ns.tprintf('> Starting %s on %s', scriptName, server)
+      const result = script.start(ns, server, target, cRemainingScripts);
+      if (result.started) {
+        ns.tprintf('> Starting %s on %s with %d threads using %f GiB', scriptName, server, result.threads, result.usedRAM);
       } else {
-        ns.tprintf('Not enough RAM to start %s on %s (%fGiB/%fGiB)', scriptName, server, availableRam, scriptRam);
+        ns.tprintf('Not enough RAM to start %s on %s (%fGiB/%fGiB)', scriptName, server, result.remainingRAM, result.scriptRAM);
       }
 
       cRemainingScripts--;
