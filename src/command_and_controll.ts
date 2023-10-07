@@ -32,14 +32,14 @@ export async function main(ns: NS) {
 async function attack(ns: NS, targets: Target[], attackers: string[], controller: Controller, commander: Commander) {
     const results = controller.attackTargets(attackers, targets);
     for (const result of results) {
-        // if(result.action !== "grow") {
+        if(result.action !== "grow") {
             for (const attacker of result.attackers) {
                 ns.printf('> %6s  security: %7.3f/%2d; eta: %3ds; threads: %3d; %s ← %s',
                     result.action, result.target.securityLevel, result.target.minSecurityLevel, result.expectedTime, attacker.threads, result.target.name, attacker.name);
             }
-        // }
+        }
     }
-    if(results.length > 0) {
+    if(results.filter(r => r.action !== "grow").length > 0) {
         ns.printf('---')
     }
     await commander.listen().then((data) => {
