@@ -1,8 +1,9 @@
-import { NS } from "@ns";
-import { collectAccessibleServers } from '/util/scan'
+import {NS} from "@ns";
+import {Scanner} from "/cc/Scanner";
 
 export async function main(ns: NS) {
-  const servers = collectAccessibleServers(ns);
+  const scanner = new Scanner(ns);
+  const servers = scanner.accessible;
 
   let bestServer = "";
   let maxMoney = 0;

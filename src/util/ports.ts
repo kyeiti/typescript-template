@@ -16,7 +16,7 @@ class PortCracker {
     }
 }
 
-export const PORTS = [
+const PORT_CRACKERS = [
     new PortCracker('BruteSSH.exe', 'brutessh'),
     new PortCracker('FTPCrack.exe', 'ftpcrack'),
     new PortCracker('relaySMTP.exe', 'relaysmtp'),
@@ -26,5 +26,5 @@ export const PORTS = [
 
 /** @param {NS} ns */
 export function getAvailablePortCrackers(ns: NS) {
-    return PORTS.filter(cracker => ns.fileExists(cracker.requiredFile));
+    return PORT_CRACKERS.filter(cracker => ns.fileExists(cracker.requiredFile));
 }

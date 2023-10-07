@@ -1,12 +1,13 @@
 import {NS} from "@ns";
 import {hackServer} from '/util/functions'
 import {DEPLOYMENT} from '/util/const'
-import {collectAccessibleServers, collectHackableServers} from "/util/scan";
 import {ArgFlagArg, ArgFlags} from "/util/args";
 import {Script} from "/util/Script";
+import {Scanner} from "/cc/Scanner";
 
 export async function main(ns: NS) {
-  ns.tprintf('Start...');
+  const scanner = new Scanner(ns);
+
   const argv: ArgFlags = ns.flags(<ArgFlagArg>[
     ['target', ''],
     ['scripts', [...DEPLOYMENT.SCRIPTS.keys()].join(",")],
@@ -18,20 +19,17 @@ export async function main(ns: NS) {
 
 
   ns.tprintf('Hacking servers...');
-  hackServers(ns);
+  hackServers(ns, scanner.hackable);
   ns.tprintf(' ');
 
   ns.tprintf('Deploying and starting scripts...');
-  const servers = collectAccessibleServers(ns);
+  const servers = scanner.accessible;
 
   deployScripts(ns, servers, scripts);
   startScripts(ns, servers, scripts, target, restart);
 }
 
-/** @param {NS} ns */
-function hackServers(ns: NS) {
-  const servers = collectHackableServers(ns);
-
+function hackServers(ns: NS, servers: string[]) {
   for (const server of servers) {
     ns.tprintf('%s', server);
     hackServer(ns, server);

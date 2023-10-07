@@ -1,8 +1,9 @@
 import {NS} from "@ns";
-import {getAllServers} from "/util/scan";
+import {Scanner} from "/cc/Scanner";
 
 export async function main(ns: NS) {
-    for(const s of getAllServers(ns)) {
+    const scanner = new Scanner(ns);
+    for(const s of scanner.all) {
         ns.tprintf("%s", s);
     }
 }
