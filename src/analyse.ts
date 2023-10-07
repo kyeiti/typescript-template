@@ -1,14 +1,14 @@
-import { isServerHackable } from '/util/functions'
-import {collectAccessibleServers} from "/util/scan";
 import {NS} from "@ns";
+import {Scanner} from "/cc/Scanner";
 
 export async function main(ns: NS) {
-  const hosts = collectAccessibleServers(ns);
+  const scanner = new Scanner(ns);
+  const hosts = scanner.accessible;
   const cores = 1;
   const threads = 1;
   const curHackLvl = ns.getHackingLevel(); // hacking level
   const secDec = ns.weakenAnalyze(threads, cores); // local
-  const canHack = isServerHackable; // hacking level & ports
+  const canHack = scanner.isServerHackable; // hacking level & ports
 
   const res = hosts.map(host => {
     const reqHackLvl = ns.getServerRequiredHackingLevel(host); // constant
@@ -64,7 +64,7 @@ export async function main(ns: NS) {
       time: time,
       'security': security,
       'hack': hack,
-      host: host, canHack: canHack(ns, host), maxMoney: maxMoney,
+      host: host, canHack: canHack(host), maxMoney: maxMoney,
       growthFactor: growthFactor / 100, relMoney: curMoney / maxMoney, secDecFactor: secDecFactor,
       rewardHack: rewardHack, penaltyHack: penaltyHack, rewardGrow: rewardGrow, penaltyGrow: penaltyGrow,
       profit: profit, secInc: secInc,
