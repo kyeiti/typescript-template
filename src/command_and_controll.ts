@@ -7,65 +7,59 @@ import {Target} from "/cc/Target";
 export async function main(ns: NS) {
     const scanner = new Scanner(ns);
     const commander = new Commander(ns)
-    const controller = new Controller(ns, commander);
+    const controller = new Controller(ns);
 
-    ns.tprintf('Hacking servers...');
+    // ns.atExit(controller.generateStatistics)
+    ns.disableLog('ALL')
 
-    const hackResult = controller.hackServers(scanner.hackable)
-    for (const server of hackResult) {
-        ns.tprintf('> Hacked %s', server);
-    }
+    hackServers(ns, controller, scanner);
 
-    ns.tprintf(' ');
-
-    ns.tprintf('Deploying...');
+    ns.printf('Deploying...');
     const deployResult = controller.deploy(scanner.accessible)
     for (const result of deployResult) {
         if(!result.success)
-        ns.tprintf('> Failed to deployed %s to %s', result.files.join(", "), result.server);
+        ns.printf('> Failed to deployed %s to %s', result.files.join(", "), result.server);
     }
 
-    ns.tprintf(' ');
-
-    // ns.tprintf('Starting Scripts...');
-    // const startResult = controller.startReceiver(scanner.accessible, restart)
-    // for (const result of startResult) {
-    //     if (result.started) {
-    //         ns.tprintf('> Starting %s on %s with %d threads using %f GiB', result.script.name, result.server, result.threads, result.usedRAM);
-    //     } else {
-    //         ns.tprintf('Not enough RAM to start %s on %s (%fGiB/%fGiB)', result.script.name, result.server, result.remainingRAM, result.scriptRAM);
-    //     }
-    // }
+    ns.printf(' ');
 
     const targets = scanner.targets.map(s => new Target(ns, s));
     const attackers = scanner.attackers;
-    ns.tprintf('Starting Attack...');
+    ns.printf('Starting Attack...');
     await attack(ns, targets, attackers, controller, commander);
-
 }
 
 async function attack(ns: NS, targets: Target[], attackers: string[], controller: Controller, commander: Commander) {
     const results = controller.attackTargets(attackers, targets);
     for (const result of results) {
-        for (const attacker of result.attackers) {
-            ns.tprintf('> Attacking %s with %s from %s with %d threads', result.target.name, result.action, attacker.name, attacker.threads);
-        }
+        // if(result.action !== "grow") {
+            for (const attacker of result.attackers) {
+                ns.printf('> %6s  security: %7.3f/%2d; eta: %3ds; threads: %3d; %s ← %s',
+                    result.action, result.target.securityLevel, result.target.minSecurityLevel, result.expectedTime, attacker.threads, result.target.name, attacker.name);
+            }
+        // }
     }
     if(results.length > 0) {
-        ns.tprintf('---')
+        ns.printf('---')
     }
     await commander.listen().then((data) => {
         const target = targets.find(t => t.name === data.target)
         if(!target) {
             return;
         }
-        if(data.action === 'hack') {
-            target.removeHacker(data.host)
-        } else if(data.action === 'weaken') {
-            target.removeWeakener(data.host)
-        } else if(data.action === 'grow') {
-            target.removeGrower(data.host)
-        }
+        target.removeAttacker(data.action, data.host, data.threads)
     })
     await attack(ns, targets, attackers, controller, commander)
+}
+
+function hackServers(ns: NS, controller: Controller, scanner: Scanner) {
+    ns.printf('Hacking servers...');
+    const hackResult = controller.hackServers(scanner.hackable)
+    for (const server of hackResult) {
+        ns.printf('> Hacked %s', server);
+    }
+    ns.printf(' ');
+    // ns.sleep(60000).then(
+    //     () => hackServers(ns, controller, scanner)
+    // )
 }
