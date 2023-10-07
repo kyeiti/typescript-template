@@ -17,6 +17,7 @@ type BaseCommandResult = {
     action: Action,
     host: string,
     target: string,
+    threads: number,
 }
 
 type WeakenResult = BaseCommandResult & {

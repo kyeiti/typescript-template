@@ -6,7 +6,9 @@ export type Arg = 'target' |
     'minSecurity' |
     'currentSecurity' |
     'restartAll' |
-    'scripts'
+    'scripts' |
+    'host' |
+    'threads'
     ;
 
 export type ArgFlags = Partial<{[key in Arg]: ScriptArg}>

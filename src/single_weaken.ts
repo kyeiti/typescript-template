@@ -5,6 +5,8 @@ import {Receiver} from "/cc/Receiver";
 export async function main(ns: NS) {
     const argv: ArgFlags = ns.flags(<ArgFlagArg>[
         ['target', ''],
+        ['host', ''],
+        ['threads', 0],
     ]);
     const server = <string>argv['target']
     const receiver = new Receiver(ns, server);
@@ -14,6 +16,7 @@ export async function main(ns: NS) {
         action: "weaken",
         target: server,
         weakenedByAbs: result,
-        host: ns.getHostname(),
+        host: <string>argv['host'],
+        threads: <number>argv['threads'],
     })
 }

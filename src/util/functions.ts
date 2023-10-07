@@ -1,18 +1,6 @@
 import {NS} from "@ns";
 import {getAvailablePortCrackers} from '/util/ports';
 
-export function isServerHackable(ns: NS, server: string) {
-  if (ns.hasRootAccess(server)) {
-    return false;
-  }
-  if (ns.getServerRequiredHackingLevel(server) <= ns.getHackingLevel()) {
-    if (ns.getServerNumPortsRequired(server) <= getAvailablePortCrackers(ns).length) {
-      return true;
-    }
-  }
-  return false;
-}
-
 /**
  * @param {NS} ns
  * @param {string} server

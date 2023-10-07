@@ -4,6 +4,7 @@ import {Target} from "/cc/Target";
 
 export class Script {
     private static defaultTarget = "n00dles";
+
     constructor(
         public readonly name: string,
         public readonly args: Arg[] = []
@@ -14,7 +15,7 @@ export class Script {
         const maxRam = ns.getServerMaxRam(attacker);
         const scriptRam = ns.getScriptRam(this.name, attacker);
 
-        if(maxRam === 0) {
+        if (maxRam === 0) {
             return {
                 started: false,
                 script: this,
@@ -30,7 +31,7 @@ export class Script {
         const availableRam = maxRam - usedRam;
         const threads = Math.floor(availableRam / scriptRam);
         if (threads > 0) {
-            ns.exec(this.name, attacker, threads, ...this.getArgsWithValues(ns, target ?? attacker));
+            ns.exec(this.name, attacker, threads, ...this.getArgsWithValues(ns, attacker, threads, target ?? attacker));
             return {
                 started: true,
                 script: this,
@@ -53,13 +54,13 @@ export class Script {
         }
     }
 
-    run(ns: NS, attacker: {name: string, threads: number}, target: Target, threadsToUse: number) {
+    run(ns: NS, attacker: { name: string, threads: number }, target: Target, threadsToUse: number) {
         const maxRam = ns.getServerMaxRam(attacker.name);
         const scriptRam = ns.getScriptRam(this.name, attacker.name);
         const usedRam = ns.getServerUsedRam(attacker.name)
         const availableRam = maxRam - usedRam;
 
-        if(maxRam < scriptRam) {
+        if (maxRam < scriptRam) {
             return {
                 started: false,
                 script: this,
@@ -75,7 +76,8 @@ export class Script {
         const availableThreads = attacker.threads;
 
         let usedThreads = 0;
-        const pid = ns.exec(this.name, attacker.name, threadsToUse >= availableThreads ? availableThreads :threadsToUse, ...this.getArgsWithValues(ns, target.name));
+        const expectedThreads = threadsToUse >= availableThreads ? availableThreads : threadsToUse
+        const pid = ns.exec(this.name, attacker.name, expectedThreads, ...this.getArgsWithValues(ns, attacker.name, expectedThreads, target.name));
         if (pid > 0) {
             const process = ns.ps(attacker.name).filter((p) => p.pid === pid)[0];
             usedThreads = process.threads
@@ -92,30 +94,34 @@ export class Script {
         };
     }
 
-    private getArgsWithValues(ns: NS, target:string|null = null) {
-        const args: (string|number)[] = [];
+    private getArgsWithValues(ns: NS, attacker: string, threads: number, target: string | null = null) {
+        const args: (string | number)[] = [];
         for (const arg of this.args) {
             args.push('--' + arg)
-            args.push(this.getValueForArg(ns, arg, target))
+            args.push(this.getValueForArg(ns, arg, attacker, threads, target))
         }
         return args;
     }
 
-    private getValueForArg(ns: NS, arg: Arg, server: string|null = null) {
-        if (!server) {
-            server = Script.defaultTarget;
+    private getValueForArg(ns: NS, arg: Arg, attacker: string, threads: number, target: string | null = null) {
+        if (!target) {
+            target = Script.defaultTarget;
         }
         switch (arg) {
             case 'target':
-                return server;
+                return target;
             case 'maxMoney':
-                return ns.getServerMaxMoney(server);
+                return ns.getServerMaxMoney(target);
             case 'minSecurity':
-                return ns.getServerMinSecurityLevel(server);
+                return ns.getServerMinSecurityLevel(target);
             case 'currentSecurity':
-                return ns.getServerSecurityLevel(server);
+                return ns.getServerSecurityLevel(target);
             case 'currentMoney':
-                return ns.getServerMoneyAvailable(server);
+                return ns.getServerMoneyAvailable(target);
+            case 'host':
+                return attacker
+            case 'threads':
+                return threads
             default:
                 return "";
         }

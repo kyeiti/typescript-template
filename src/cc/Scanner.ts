@@ -1,5 +1,4 @@
 import {NS} from "@ns";
-import {isServerHackable} from "/util/functions";
 import {getAvailablePortCrackers} from "/util/ports";
 
 export class Scanner {
@@ -20,7 +19,7 @@ export class Scanner {
     }
 
     get hackable(): string[] {
-        return this.all.filter((s) => isServerHackable(this.ns, s));
+        return this.all.filter((s) => this.isServerHackable(s));
     }
 
     get targets(): string[] {

@@ -1,4 +1,5 @@
 import {NS} from "@ns";
+import {Action} from "/cc/config";
 
 type Attacker = {
     name: string,
@@ -6,10 +7,12 @@ type Attacker = {
 }
 
 export class Target {
-    // name of attacker => used threads
-    public growers: Map<string, number> = new Map()
-    public weakeners: Map<string, number> = new Map()
-    public hackers: Map<string, number> = new Map();
+    // action => name of attacker => used threads
+    public attackers: Map<Action, Map<string, number>> = new Map([
+        ['hack', new Map()],
+        ['weaken', new Map()],
+        ['grow', new Map()]
+    ]);
 
     constructor(
         private readonly ns: NS,
@@ -30,6 +33,10 @@ export class Target {
 
     get needsWeakening(): boolean {
         return this.threadsToWeaken > 0;
+    }
+
+    get isGettingWeakend() {
+        return this.attackers.get('weaken')!.size > 0
     }
 
     get needsGrowing(): boolean {
@@ -58,7 +65,7 @@ export class Target {
 
     get threadsToWeaken(): number {
         const threads = (this.securityLevel - this.minSecurityLevel) / 0.05
-        return Math.ceil(threads - [...this.weakeners.values()].reduce((p, c) => p + c, 0));
+        return Math.ceil(threads) - [...this.attackers.get("weaken")!.values()].reduce((p, c) => p + c, 0);
     }
 
     get threadsToGrow(): number {
@@ -66,38 +73,60 @@ export class Target {
         if (this.availableMoney === 0 || moneyToGeneratePct < 1) {
             return 0;
         }
-        return Math.ceil(this.ns.growthAnalyze(this.name, moneyToGeneratePct)) - [...this.growers.values()].reduce((p, c) => p + c, 0);
+        return Math.ceil(this.ns.growthAnalyze(this.name, moneyToGeneratePct)) - [...this.attackers.get("grow")!.values()].reduce((p, c) => p + c, 0);
     }
 
     get threadsToHack(): number {
-        return Math.floor(this.ns.hackAnalyzeThreads(this.name, this.availableMoney * 0.1)) - [...this.hackers.values()].reduce((p, c) => p + c, 0);
+        return Math.floor(this.ns.hackAnalyzeThreads(this.name, this.availableMoney * 0.1)) - [...this.attackers.get("hack")!.values()].reduce((p, c) => p + c, 0);
     }
 
     get hasFreeHackingSlots() {
-        return this.hackers.size === 0
+        return this.attackers.get('hack')?.size === 0
     }
 
-    addHacker(hacker: Attacker) {
-        this.hackers.set(hacker.name, (this.hackers.get(hacker.name) ?? 0) + hacker.threads)
+    threadsNeeded(action: Action) {
+        switch (action) {
+            case "hack":
+                return this.threadsToHack;
+            case "weaken":
+                return this.threadsToWeaken;
+            case "grow":
+                return this.threadsToGrow;
+        }
     }
 
-    removeHacker(hacker: string) {
-        this.hackers.delete(hacker);
+    timeNeeded(action: Action) {
+        switch (action) {
+            case "hack":
+                return this.timeToHack;
+            case "weaken":
+                return this.timeToWeaken;
+            case "grow":
+                return this.timeToGrow;
+        }
     }
 
-    addWeakener(weakener: Attacker) {
-        this.weakeners.set(weakener.name, (this.weakeners.get(weakener.name) ?? 0) + weakener.threads)
+    canExecuteAction(action: Action) {
+        switch (action) {
+            case "weaken":
+                return this.needsWeakening;
+            case "grow":
+                return !this.needsWeakening && this.needsGrowing;
+            case "hack":
+                return this.hasFreeHackingSlots && !this.needsWeakening && !this.needsGrowing
+        }
     }
 
-    removeWeakener(attacker: string) {
-        this.weakeners.delete(attacker);
+    addAttacker(attacker: Attacker, action: Action) {
+        this.attackers.get(action)?.set(attacker.name, (this.attackers.get(action)?.get(attacker.name) ?? 0) + attacker.threads)
     }
 
-    addGrower(grower: Attacker) {
-        this.growers.set(grower.name, (this.growers.get(grower.name) ?? 0) + grower.threads)
-    }
-
-    removeGrower(attacker: string) {
-        this.growers.delete(attacker);
+    removeAttacker(action: Action, attacker: string, threads: number) {
+        const newThreads = (this.attackers.get(action)?.get(attacker) ?? 0) - threads;
+        if (newThreads <= 0) {
+            this.attackers.get(action)?.delete(attacker);
+        } else {
+            this.attackers.get(action)?.set(attacker, newThreads);
+        }
     }
 }

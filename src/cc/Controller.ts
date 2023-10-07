@@ -2,16 +2,15 @@ import {NS} from "@ns";
 import {getAvailablePortCrackers} from "/util/ports";
 import {Script} from "/cc/Script";
 import {Target} from "/cc/Target";
-import {Commander} from "/cc/Commander";
+import {Action} from "/cc/config";
 
 export class Controller {
     private static filesToDeploy = ['cc/Receiver.js', 'cc/config.js', 'cc/PortListener.js', 'single_hack.js', 'single_weaken.js', 'single_grow.js'];
-    private static receiverScript = new Script("");
-    private static hackerScript = new Script('single_hack.js', ['target'])
-    private static weakenScript = new Script('single_weaken.js', ['target'])
-    private static growScript = new Script('single_grow.js', ['target'])
+    private static hackerScript = new Script('single_hack.js', ['target', 'host', 'threads'])
+    private static weakenScript = new Script('single_weaken.js', ['target', 'host', 'threads'])
+    private static growScript = new Script('single_grow.js', ['target', 'host', 'threads'])
 
-    constructor(private readonly ns: NS, private readonly commander: Commander) {
+    constructor(private readonly ns: NS) {
     }
 
     deploy(servers: string[]) {
@@ -26,21 +25,6 @@ export class Controller {
         return deployed;
     }
 
-    startReceiver(servers: string[], restart: boolean) {
-        const results = [];
-        for (const server of servers) {
-            if (restart) {
-                this.killReceiver(server);
-            }
-            if (this.isReceiverRunning(server)) {
-                continue;
-            }
-
-            results.push(Controller.receiverScript.start(this.ns, server));
-        }
-        return results;
-    }
-
     hackServers(servers: string[]) {
         for (const server of servers) {
             this.hackServer(server);
@@ -50,86 +34,51 @@ export class Controller {
 
     attackTargets(attackers: string[], targets: Target[]) {
         const results = [];
-        let hackTarget = this.findNextTargetToHack(targets);
 
-        while (hackTarget !== null) {
-            const hackResult = this.hackTarget(attackers, hackTarget);
-            results.push(
-                {
-                    attackers: hackResult.attackers,
-                    target: hackTarget,
-                    expectedTime: hackTarget.timeToHack,
-                    action: 'hack'
-                });
-            if (!hackResult.fulfilled) {
-                break;
+        for(const action of ["hack", "grow", "weaken"] as Action[]) {
+            let target = this.findNextTarget(action, targets);
+            while (target !== null) {
+                const hackResult = this.attackTarget(action, attackers, target);
+                if (hackResult.attackers.length > 0) {
+                    results.push(
+                        {
+                            attackers: hackResult.attackers,
+                            target: target,
+                            expectedTime: target.timeToHack,
+                            action: action
+                        });
+                }
+                if (!hackResult.fulfilled) {
+                    break;
+                }
+                target = this.findNextTarget(action, targets);
             }
-            hackTarget = this.findNextTargetToHack(targets);
-        }
-        let growTarget = this.findNextTargetToGrow(targets);
-        while (growTarget !== null) {
-            const growResult = this.growTarget(attackers, growTarget);
-            results.push(
-                {
-                    attackers: growResult.attackers,
-                    target: growTarget,
-                    expectedTime: growTarget.timeToGrow,
-                    action: 'grow'
-                });
-            if (!growResult.fulfilled) {
-                break;
-            }
-            growTarget = this.findNextTargetToGrow(targets);
-        }
-        let weakenTarget = this.findNextTargetToWeaken(targets);
-        while (weakenTarget !== null) {
-            const weakenResult = this.weakenTarget(attackers, weakenTarget);
-            results.push(
-                {
-                    attackers: weakenResult.attackers,
-                    target: weakenTarget,
-                    expectedTime: weakenTarget.timeToWeaken,
-                    action: 'weaken'
-                });
-            if (!weakenResult.fulfilled) {
-                break;
-            }
-            weakenTarget = this.findNextTargetToWeaken(targets);
         }
         return results;
     }
 
-    hackTarget(attackers: string[], target: Target) {
-        const result = this.executeScript(attackers, target, Controller.hackerScript, target.threadsToHack)
+    private attackScript(action: Action) {
+        switch (action) {
+            case "weaken":
+                return Controller.weakenScript;
+            case "hack":
+                return Controller.hackerScript;
+            case "grow":
+                return Controller.growScript;
+        }
+    }
+
+    private attackTarget(action: Action, attackers: string[], target: Target) {
+        const result = this.executeScript(attackers, target, this.attackScript(action), target.threadsNeeded(action))
         if (result.attackers) {
             for (const attacker of result.attackers) {
-                target.addHacker(attacker);
+                target.addAttacker(attacker, action);
             }
         }
         return result
     }
 
-    weakenTarget(attackers: string[], target: Target) {
-        const result = this.executeScript(attackers, target, Controller.weakenScript, target.threadsToWeaken)
-        if (result.attackers) {
-            for (const attacker of result.attackers) {
-                target.addWeakener(attacker);
-            }
-        }
-        return result
-    }
-
-    growTarget(attackers: string[], target: Target) {
-        const result = this.executeScript(attackers, target, Controller.growScript, target.threadsToGrow)
-        if (result.attackers) {
-            for (const attacker of result.attackers) {
-                target.addGrower(attacker);
-            }
-        }
-        return result
-    }
-
-    findBestAttacker(attackers: string[], neededThreads: number, script: Script) {
+    private findBestAttacker(attackers: string[], neededThreads: number, script: Script) {
         let bestAttacker = null;
         let bestThreads = 0;
         for (const attacker of attackers) {
@@ -153,55 +102,18 @@ export class Controller {
         return {name: bestAttacker, threads: bestThreads};
     }
 
-    findNextTargetToWeaken(targets: Target[]) {
+    private findNextTarget(action: Action, targets: Target[]) {
         let bestTarget = null;
         for (const target of targets) {
-            // Only weaken if time to weaken is less than 10 min
-            if (target.timeToWeaken > 600 || !target.needsWeakening) {
+            // Only attack if time to action is less than 10 min
+            if (target.timeNeeded(action) > 600 || !target.canExecuteAction(action)) {
                 continue;
             }
             if (bestTarget === null) {
                 bestTarget = target;
                 continue;
             }
-            if (target.timeToWeaken < bestTarget.timeToWeaken) {
-                bestTarget = target
-            }
-        }
-        return bestTarget;
-    }
-
-    findNextTargetToGrow(targets: Target[]) {
-        let bestTarget = null;
-        for (const target of targets) {
-            // Only weaken if time to grow is less than 10 min
-            // this.ns.tprintf('grow target %s, ttG %d, needsGrow %s, needsWeaken %s', target.name, target.timeToGrow, target.needsGrowing ? 'y' : 'n', target.needsWeakening ? 'y' : 'n');
-            if (target.timeToGrow > 600 || !target.needsGrowing || target.needsWeakening) {
-                continue;
-            }
-            if (bestTarget === null) {
-                bestTarget = target;
-                continue;
-            }
-            if (target.timeToGrow < bestTarget.timeToGrow) {
-                bestTarget = target
-            }
-        }
-        return bestTarget;
-    }
-
-    findNextTargetToHack(targets: Target[]) {
-        let bestTarget = null;
-        for (const target of targets) {
-            // Only weaken if time to grow is less than 10 min
-            if (target.timeToHack > 600 || target.needsGrowing || target.needsWeakening || !target.hasFreeHackingSlots) {
-                continue;
-            }
-            if (bestTarget === null) {
-                bestTarget = target;
-                continue;
-            }
-            if (target.timeToHack < bestTarget.timeToHack) {
+            if (target.timeNeeded(action) < bestTarget.timeNeeded(action)) {
                 bestTarget = target
             }
         }
@@ -234,21 +146,6 @@ export class Controller {
             fulfilled: true,
             attackers: chosenAttackers,
         }
-    }
-
-    private killReceiver(server: string) {
-        return this.getRunningReceivers(server)
-            .map(p => this.ns.kill(p.pid))
-            .reduce((k, p) => k && p, true);
-    }
-
-    private isReceiverRunning(server: string) {
-        return this.getRunningReceivers(server).length > 0
-    }
-
-    private getRunningReceivers(server: string) {
-        return this.ns.ps(server)
-            .filter(p => p.filename === Controller.receiverScript.name);
     }
 
     private hackServer(server: string) {
