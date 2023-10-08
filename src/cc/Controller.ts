@@ -68,11 +68,19 @@ export class Controller {
         }
     }
 
-    private attackTarget(action: Action, attackers: string[], target: Target) {
-        const result = this.executeScript(attackers, target, this.attackScript(action), target.threadsNeeded(action))
+    private attackTarget(action: Action, attackers: string[], target: Target, threads?: number) {
+        const result = this.executeScript(attackers, target, this.attackScript(action), threads ?? target.threadsNeeded(action))
         if (result.attackers) {
             for (const attacker of result.attackers) {
                 target.addAttacker(attacker, action);
+            }
+        }
+        if(result.createdThreads > 0) {
+            if (action === "hack") {
+                this.attackTarget('weaken', attackers, target, target.getThreadsToWeaken(target.secIncreaseForHack(result.createdThreads)));
+            }
+            if (action === "grow") {
+                this.attackTarget('weaken', attackers, target, target.getThreadsToWeaken(target.secIncreaseForGrowth(result.createdThreads)));
             }
         }
         return result
@@ -136,13 +144,11 @@ export class Controller {
             name: string,
             threads: number
         }[] = []
-        while (requiredThreads > 0) {
+        let createdThreads = 0;
+        while (createdThreads < requiredThreads) {
             const attacker = this.findBestAttacker(attackers, requiredThreads, script)
             if (attacker === null) {
-                return {
-                    fulfilled: false,
-                    attackers: chosenAttackers,
-                }
+                break;
             }
             const result = script.run(this.ns, attacker, target, requiredThreads);
             if (result.started) {
@@ -150,12 +156,13 @@ export class Controller {
                     name: result.server,
                     threads: result.threads
                 });
-                requiredThreads -= result.threads;
+                createdThreads += result.threads;
             }
         }
         return {
-            fulfilled: true,
+            fulfilled: createdThreads >= requiredThreads,
             attackers: chosenAttackers,
+            createdThreads: createdThreads,
         }
     }
 

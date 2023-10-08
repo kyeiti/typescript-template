@@ -48,16 +48,6 @@ async function attack(ns: NS, targets: Target[], attackers: string[], controller
         ns.printf('---')
         ns.printf("Current status:")
         printStatusTable(ns, targets)
-        // ns.printf("| %16s || ↘ | %12s | %5s | %5s || ↗ | %12s | %5s | %5s || $ | %12s | %5s | %5s | %5s | %s | %s", "Host", "threads", "need", "can", "threads", "need", "can", "threads", "need", "can", "$$", "")
-        // for(const target of targets) {
-        //     ns.printf("| %16s ||   | %4d / %5d | %5s | %5s ||   | %4d / %5d | %5s | %5s ||   |  %4d / %5d | %5s | %5s | %7.2f / %7.2f | %5f |", target.name,
-        //         target.isGettingWeakendBy, target.threadsToWeaken, target.shouldExecuteAction("weaken"), target.canExecuteAction("weaken"),
-        //         target.isGettingGrownBy, target.threadsToGrow, target.shouldExecuteAction("grow"), target.canExecuteAction("grow"),
-        //         target.isGettingHackedBy, target.threadsToHack, target.shouldExecuteAction("hack"), target.canExecuteAction("hack"),
-        //         target.availableMoney / 1000_000, target.maxMoney / 1000_000,
-        //         target.availableMoney / target.maxMoney
-        //     )
-        // }
         ns.printf('---')
     }
     await commander.listen().then((data) => {
@@ -79,7 +69,7 @@ function printStatusTable(ns: NS, targets: Target[]) {
         ],
         [
             {hTpl: '%1s', dTpl: '%1s', h: '↘', k: {}, d: targets.map(o => bFormat(o.shouldExecuteAction("weaken")))},
-            {hTpl: '%11s', dTpl: '%4d / %4d', h: 'threads', k: {}, d: targets.map(o => [o.isGettingWeakendBy, o.threadsToWeaken])},
+            {hTpl: '%11s', dTpl: '%4d / %4d', h: 'threads', k: {}, d: targets.map(o => [o.isGettingWeakenedBy, o.threadsToWeaken])},
             {hTpl: '%10s', dTpl: '%5.2f / %2d', h: 'security', k: {}, d: targets.map(o => [o.securityLevel, o.minSecurityLevel])},
             {hTpl: '%7s', dTpl: '%7.2f', h: 'time(s)', k: {}, d: targets.map(o => [o.timeToWeaken])},
         ], [
@@ -93,7 +83,7 @@ function printStatusTable(ns: NS, targets: Target[]) {
             {hTpl: '%7s', dTpl: '%7.2f', h: 'time(s)', k: {}, d: targets.map(o => [o.timeToHack])},
             {hTpl: '%19s', dTpl: '%8.2f / %8.2f', h: 'money(m)', k: {}, d: targets.map(o => [o.availableMoney / 1000_000, o.maxMoney / 1000_000])},
             {hTpl: '%5s', dTpl: '%5.1f', h: '$(%)', k: {}, d: targets.map(o => o.availableMoney / o.maxMoney * 100)},
-        ]
+        ],
     ];
     printTable(ns.printf, cols)
 }

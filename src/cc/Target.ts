@@ -48,16 +48,16 @@ export class Target {
         return this.threadsToWeaken > 0;
     }
 
-    get isGettingWeakendBy() {
-        return [...this.attackers.get('weaken')!.values()].reduce((p, c) => p+c, 0)
+    get isGettingWeakenedBy() {
+        return [...this.attackers.get('weaken')!.values()].reduce((p, c) => p + c, 0)
     }
 
     get isGettingGrownBy() {
-        return [...this.attackers.get('grow')!.values()].reduce((p, c) => p+c, 0)
+        return [...this.attackers.get('grow')!.values()].reduce((p, c) => p + c, 0)
     }
 
     get isGettingHackedBy() {
-        return [...this.attackers.get('hack')!.values()].reduce((p, c) => p+c, 0)
+        return [...this.attackers.get('hack')!.values()].reduce((p, c) => p + c, 0)
     }
 
     get reachedGrowthLimit() {
@@ -93,13 +93,16 @@ export class Target {
     }
 
     get threadsToWeaken(): number {
-        const threads = (this.securityLevel - this.minSecurityLevel) / Target.weakenPerThread
-        return Math.ceil(threads) - this.isGettingWeakendBy;
+        return this.getThreadsToWeaken(this.securityLevel - this.minSecurityLevel)
+            - this.isGettingWeakenedBy
+            + this.getThreadsToWeaken(this.secIncreaseForHack(this.isGettingHackedBy))
+            + this.getThreadsToWeaken(this.secIncreaseForGrowth(this.isGettingGrownBy))
+            ;
     }
 
     get threadsToGrow(): number {
         const moneyToGeneratePct = (1 - this.availableMoney / this.maxMoney) * 100;
-        if(this.availableMoney === 0) {
+        if (this.availableMoney === 0) {
             return 1;
         }
         if (moneyToGeneratePct < 1) {
@@ -114,6 +117,19 @@ export class Target {
 
     get hasFreeHackingSlots() {
         return this.attackers.get('hack')?.size === 0
+    }
+
+    getThreadsToWeaken(securityDecrease: number) {
+        const threads = securityDecrease / Target.weakenPerThread
+        return Math.ceil(threads);
+    }
+
+    secIncreaseForHack(threads: number): number {
+        return this.ns.hackAnalyzeSecurity(threads, this.name)
+    }
+
+    secIncreaseForGrowth(threads: number): number {
+        return this.ns.growthAnalyzeSecurity(threads, this.name);
     }
 
     threadsNeeded(action: Action) {
