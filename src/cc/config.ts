@@ -4,8 +4,15 @@ export const PORTS = {
 }
 
 export const waitTime = 1000 // milliseconds
+export const weakenTimeLimit = 4200;
+export const growTimeLimit = 1000;
+export const hackTimeLimit = 600;
+
+export const attackersToSkip = ["home"]
 
 export type Action = "weaken" | "grow" | "hack"
+
+export const actions = ["grow", "weaken", "hack"] as Action[]
 
 export type Command = {
     receiver: string,

@@ -2,7 +2,7 @@ import {NS} from "@ns";
 import {getAvailablePortCrackers} from "/util/ports";
 import {Script} from "/cc/Script";
 import {Target} from "/cc/Target";
-import {Action} from "/cc/config";
+import {Action, growTimeLimit, hackTimeLimit, weakenTimeLimit} from "/cc/config";
 
 export class Controller {
     private static filesToDeploy = ['cc/Receiver.js', 'cc/config.js', 'cc/PortListener.js', 'single_hack.js', 'single_weaken.js', 'single_grow.js'];
@@ -35,7 +35,7 @@ export class Controller {
     attackTargets(attackers: string[], targets: Target[]) {
         const results = [];
 
-        for(const action of ["hack", "grow", "weaken"] as Action[]) {
+        for(const action of ["hack", "weaken", "grow", ] as Action[]) {
             let target = this.findNextTarget(action, targets);
             while (target !== null) {
                 const hackResult = this.attackTarget(action, attackers, target);
@@ -106,7 +106,7 @@ export class Controller {
         let bestTarget = null;
         for (const target of targets) {
             // Only attack if time to action is less than 10 min
-            if (target.timeNeeded(action) > 600 || !target.canExecuteAction(action)) {
+            if (target.timeNeeded(action) > this.timeLimit(action) || !target.shouldExecuteAction(action)) {
                 continue;
             }
             if (bestTarget === null) {
@@ -118,6 +118,17 @@ export class Controller {
             }
         }
         return bestTarget;
+    }
+
+    private timeLimit(action: Action) {
+        switch (action) {
+            case "grow":
+                return growTimeLimit
+            case "hack":
+                return hackTimeLimit
+            case "weaken":
+                return weakenTimeLimit;
+        }
     }
 
     private executeScript(attackers: string[], target: Target, script: Script, requiredThreads: number) {

@@ -7,6 +7,11 @@ type Attacker = {
 }
 
 export class Target {
+    public static readonly weakenPerThread = 0.05;
+    public static readonly allowedRaisedSecurity = 1;
+    public static readonly growthLimit = 0.9;
+    public static readonly pctToHack = 0.11;
+    public static readonly attackTimeAllowedOnRaisedSecurity = 10 // seconds
     // action => name of attacker => used threads
     public attackers: Map<Action, Map<string, number>> = new Map([
         ['hack', new Map()],
@@ -17,6 +22,14 @@ export class Target {
     constructor(
         private readonly ns: NS,
         public readonly name: string) {
+    }
+
+    get actionsToExecute(): Action[] {
+        return (["grow", "weaken", "hack"] as Action[]).filter(a => this.shouldExecuteAction(a))
+    }
+
+    get runningActions(): Action[] {
+        return (["grow", "weaken", "hack"] as Action[]).filter(a => (this.attackers.get(a)?.size ?? 0) > 0)
     }
 
     get timeToHack(): number {
@@ -31,16 +44,28 @@ export class Target {
         return this.ns.getGrowTime(this.name) / 1000
     }
 
-    get needsWeakening(): boolean {
+    get canWeaken(): boolean {
         return this.threadsToWeaken > 0;
     }
 
-    get isGettingWeakend() {
-        return this.attackers.get('weaken')!.size > 0
+    get isGettingWeakendBy() {
+        return [...this.attackers.get('weaken')!.values()].reduce((p, c) => p+c, 0)
     }
 
-    get needsGrowing(): boolean {
-        return this.availableMoney / this.maxMoney < 0.9 && this.threadsToGrow > 0;
+    get isGettingGrownBy() {
+        return [...this.attackers.get('grow')!.values()].reduce((p, c) => p+c, 0)
+    }
+
+    get isGettingHackedBy() {
+        return [...this.attackers.get('hack')!.values()].reduce((p, c) => p+c, 0)
+    }
+
+    get reachedGrowthLimit() {
+        return this.availableMoney / this.maxMoney > Target.growthLimit
+    }
+
+    get canGrow(): boolean {
+        return this.threadsToGrow > 0;
     }
 
     get maxMoney(): number {
@@ -49,6 +74,10 @@ export class Target {
 
     get availableMoney(): number {
         return this.ns.getServerMoneyAvailable(this.name)
+    }
+
+    get hasRaisedSecurity() {
+        return this.securityLevel - this.minSecurityLevel > Target.allowedRaisedSecurity && this.timeToGrow > Target.attackTimeAllowedOnRaisedSecurity
     }
 
     get securityLevel(): number {
@@ -64,20 +93,23 @@ export class Target {
     }
 
     get threadsToWeaken(): number {
-        const threads = (this.securityLevel - this.minSecurityLevel) / 0.05
-        return Math.ceil(threads) - [...this.attackers.get("weaken")!.values()].reduce((p, c) => p + c, 0);
+        const threads = (this.securityLevel - this.minSecurityLevel) / Target.weakenPerThread
+        return Math.ceil(threads) - this.isGettingWeakendBy;
     }
 
     get threadsToGrow(): number {
-        const moneyToGeneratePct = 100 - this.maxMoney / this.availableMoney;
-        if (this.availableMoney === 0 || moneyToGeneratePct < 1) {
+        const moneyToGeneratePct = (1 - this.availableMoney / this.maxMoney) * 100;
+        if(this.availableMoney === 0) {
+            return 1;
+        }
+        if (moneyToGeneratePct < 1) {
             return 0;
         }
-        return Math.ceil(this.ns.growthAnalyze(this.name, moneyToGeneratePct)) - [...this.attackers.get("grow")!.values()].reduce((p, c) => p + c, 0);
+        return Math.ceil(this.ns.growthAnalyze(this.name, moneyToGeneratePct)) - this.isGettingGrownBy;
     }
 
     get threadsToHack(): number {
-        return Math.floor(this.ns.hackAnalyzeThreads(this.name, this.availableMoney * 0.1)) - [...this.attackers.get("hack")!.values()].reduce((p, c) => p + c, 0);
+        return Math.floor(this.ns.hackAnalyzeThreads(this.name, this.availableMoney * Target.pctToHack)) - this.isGettingHackedBy;
     }
 
     get hasFreeHackingSlots() {
@@ -106,14 +138,14 @@ export class Target {
         }
     }
 
-    canExecuteAction(action: Action) {
+    shouldExecuteAction(action: Action) {
         switch (action) {
             case "weaken":
-                return this.needsWeakening;
+                return this.securityLevel - this.minSecurityLevel > Target.weakenPerThread && this.canWeaken;
             case "grow":
-                return !this.needsWeakening && this.needsGrowing;
+                return !this.reachedGrowthLimit && !this.hasRaisedSecurity && this.canGrow;
             case "hack":
-                return this.hasFreeHackingSlots && !this.needsWeakening && !this.needsGrowing
+                return this.hasFreeHackingSlots && !this.hasRaisedSecurity && this.reachedGrowthLimit && this.threadsToHack > 0
         }
     }
 
