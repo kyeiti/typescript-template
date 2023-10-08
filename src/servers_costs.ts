@@ -1,21 +1,5 @@
 import {NS} from "@ns";
-import {bFormat, printTable, TableColumn} from "/util/table";
-import {actions} from "/cc/config";
-
-const serverNames = [
-    'red',
-    'white',
-    'blue',
-    'yellow',
-    'green',
-    'crimson',
-    'aqua',
-    'white',
-    'snow',
-    'navy',
-    'lime',
-    ''
-]
+import {printTable, TableColumn} from "/util/table";
 
 export async function main(ns: NS) {
     const ramPrices = []
