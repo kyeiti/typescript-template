@@ -2,15 +2,11 @@ import {NS} from "@ns";
 import {getAvailablePortCrackers} from "/util/ports";
 import {Script} from "/cc/Script";
 import {Target} from "/cc/Target";
-import {Attack, growTimeLimit, hackTimeLimit, weakenTimeLimit} from "/cc/config";
+import {actionScripts, Attack, growTimeLimit, hackTimeLimit, weakenTimeLimit} from "/cc/config";
 import {Attacker} from "/cc/Attacker";
 
 export class Controller {
     private static filesToDeploy = ['cc/Receiver.js', 'cc/config.js', 'cc/PortListener.js', 'single_hack.js', 'single_weaken.js', 'single_grow.js', 'support_faction.js'];
-    private static hackerScript = new Script('single_hack.js', ['target', 'host', 'threads'])
-    private static weakenScript = new Script('single_weaken.js', ['target', 'host', 'threads'])
-    private static growScript = new Script('single_grow.js', ['target', 'host', 'threads'])
-    private static supportScript = new Script('support_faction.js', [])
 
     constructor(private readonly ns: NS) {
     }
@@ -37,7 +33,7 @@ export class Controller {
     attackTargets(attackers: Attacker[], targets: Target[]) {
         const results = [];
 
-        for(const action of ["hack", "weaken", "grow", ] as Attack[]) {
+        for (const action of ["hack", "weaken", "grow",] as Attack[]) {
             let target = this.findNextTarget(action, targets);
             while (target !== null) {
                 const hackResult = this.attackTarget(action, attackers, target);
@@ -60,23 +56,16 @@ export class Controller {
     }
 
     supportFaction(attackers: Attacker[]) {
-        for(const attacker of attackers) {
-            if(attacker.getAvailableThreadsFor(Controller.supportScript) > 1) {
-                Controller.supportScript.run(this.ns, attacker, new Target(this.ns, ""), attacker.getAvailableThreadsFor(Controller.supportScript))
+        for (const attacker of attackers) {
+            if (attacker.getAvailableThreadsFor(actionScripts["share"]) > 1) {
+                actionScripts["share"].run(this.ns, attacker, new Target(this.ns, ""), attacker.getAvailableThreadsFor(actionScripts["share"]))
             }
         }
-        this.executeScript(attackers, new Target(this.ns, ""), Controller.supportScript, 1_000_000);
+        this.executeScript(attackers, new Target(this.ns, ""), actionScripts["share"], 1_000_000);
     }
 
     private attackScript(action: Attack) {
-        switch (action) {
-            case "weaken":
-                return Controller.weakenScript;
-            case "hack":
-                return Controller.hackerScript;
-            case "grow":
-                return Controller.growScript;
-        }
+        return actionScripts[action];
     }
 
     private attackTarget(action: Attack, attackers: Attacker[], target: Target, threads?: number) {

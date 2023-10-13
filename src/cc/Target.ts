@@ -1,5 +1,14 @@
 import {NS} from "@ns";
-import {Action, attacks, Attack, CommandResult, AttackResult} from "/cc/config";
+import {
+    Action,
+    attacks,
+    Attack,
+    CommandResult,
+    AttackResult,
+    growthLimit,
+    allowedRaisedSecurity,
+    attackTimeAllowedOnRaisedSecurity, pctToHack
+} from "/cc/config";
 
 type Attacker = {
     name: string,
@@ -8,10 +17,6 @@ type Attacker = {
 
 export class Target {
     public static readonly weakenPerThread = 0.05;
-    public static readonly allowedRaisedSecurity = 1;
-    public static readonly growthLimit = 0.9;
-    public static readonly pctToHack = 0.11;
-    public static readonly attackTimeAllowedOnRaisedSecurity = 10 // seconds
     // action => name of attacker => used threads
     public attackers: Map<Attack, Map<string, number>> = new Map([
         ['hack', new Map()],
@@ -61,7 +66,7 @@ export class Target {
     }
 
     get reachedGrowthLimit() {
-        return this.availableMoney / this.maxMoney > Target.growthLimit
+        return this.availableMoney / this.maxMoney > growthLimit
     }
 
     get canGrow(): boolean {
@@ -77,7 +82,7 @@ export class Target {
     }
 
     get hasRaisedSecurity() {
-        return this.securityLevel - this.minSecurityLevel > Target.allowedRaisedSecurity && this.timeToGrow > Target.attackTimeAllowedOnRaisedSecurity
+        return this.securityLevel - this.minSecurityLevel > allowedRaisedSecurity && this.timeToGrow > attackTimeAllowedOnRaisedSecurity
     }
 
     get securityLevel(): number {
@@ -101,7 +106,7 @@ export class Target {
     }
 
     get threadsToGrow(): number {
-        const moneyToGeneratePct = this.maxMoney / this.availableMoney;
+        const moneyToGeneratePct = this.maxMoney / this.availableMoney + (this.isGettingHackedBy > 0 ? pctToHack : 0);
         if (this.availableMoney === 0) {
             return 1;
         }
@@ -112,7 +117,7 @@ export class Target {
     }
 
     get threadsToHack(): number {
-        return Math.floor(this.ns.hackAnalyzeThreads(this.name, this.availableMoney * Target.pctToHack)) - this.isGettingHackedBy;
+        return Math.floor(this.ns.hackAnalyzeThreads(this.name, this.availableMoney * pctToHack)) - this.isGettingHackedBy;
     }
 
     get hasFreeHackingSlots() {
