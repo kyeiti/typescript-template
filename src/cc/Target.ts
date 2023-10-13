@@ -1,5 +1,5 @@
 import {NS} from "@ns";
-import {Action} from "/cc/config";
+import {Action, attacks, Attack, CommandResult, AttackResult} from "/cc/config";
 
 type Attacker = {
     name: string,
@@ -13,7 +13,7 @@ export class Target {
     public static readonly pctToHack = 0.11;
     public static readonly attackTimeAllowedOnRaisedSecurity = 10 // seconds
     // action => name of attacker => used threads
-    public attackers: Map<Action, Map<string, number>> = new Map([
+    public attackers: Map<Attack, Map<string, number>> = new Map([
         ['hack', new Map()],
         ['weaken', new Map()],
         ['grow', new Map()]
@@ -24,12 +24,12 @@ export class Target {
         public readonly name: string) {
     }
 
-    get actionsToExecute(): Action[] {
-        return (["grow", "weaken", "hack"] as Action[]).filter(a => this.shouldExecuteAction(a))
+    get actionsToExecute(): Attack[] {
+        return attacks.filter(a => this.shouldReceiveAttack(a))
     }
 
-    get runningActions(): Action[] {
-        return (["grow", "weaken", "hack"] as Action[]).filter(a => (this.attackers.get(a)?.size ?? 0) > 0)
+    get runningActions(): Attack[] {
+        return attacks.filter(a => (this.attackers.get(a)?.size ?? 0) > 0)
     }
 
     get timeToHack(): number {
@@ -101,7 +101,7 @@ export class Target {
     }
 
     get threadsToGrow(): number {
-        const moneyToGeneratePct = (1 - this.availableMoney / this.maxMoney) * 100;
+        const moneyToGeneratePct = this.maxMoney / this.availableMoney;
         if (this.availableMoney === 0) {
             return 1;
         }
@@ -119,20 +119,20 @@ export class Target {
         return this.attackers.get('hack')?.size === 0
     }
 
-    getThreadsToWeaken(securityDecrease: number) {
+    private getThreadsToWeaken(securityDecrease: number) {
         const threads = securityDecrease / Target.weakenPerThread
         return Math.ceil(threads);
     }
 
-    secIncreaseForHack(threads: number): number {
+    private secIncreaseForHack(threads: number): number {
         return this.ns.hackAnalyzeSecurity(threads, this.name)
     }
 
-    secIncreaseForGrowth(threads: number): number {
+    private secIncreaseForGrowth(threads: number): number {
         return this.ns.growthAnalyzeSecurity(threads, this.name);
     }
 
-    threadsNeeded(action: Action) {
+    threadsNeeded(action: Attack) {
         switch (action) {
             case "hack":
                 return this.threadsToHack;
@@ -143,7 +143,7 @@ export class Target {
         }
     }
 
-    timeNeeded(action: Action) {
+    timeNeeded(action: Attack) {
         switch (action) {
             case "hack":
                 return this.timeToHack;
@@ -154,10 +154,10 @@ export class Target {
         }
     }
 
-    shouldExecuteAction(action: Action) {
+    shouldReceiveAttack(action: Attack) {
         switch (action) {
             case "weaken":
-                return this.securityLevel - this.minSecurityLevel > Target.weakenPerThread && this.canWeaken;
+                return this.canWeaken;
             case "grow":
                 return !this.reachedGrowthLimit && !this.hasRaisedSecurity && this.canGrow;
             case "hack":
@@ -165,16 +165,37 @@ export class Target {
         }
     }
 
-    addAttacker(attacker: Attacker, action: Action) {
-        this.attackers.get(action)?.set(attacker.name, (this.attackers.get(action)?.get(attacker.name) ?? 0) + attacker.threads)
+    addAttacker(attacker: Attacker, action: string) {
+        const action_ = this.findAttack(action);
+        this.attackers.get(action_)?.set(attacker.name, (this.attackers.get(action_)?.get(attacker.name) ?? 0) + attacker.threads)
     }
 
-    removeAttacker(action: Action, attacker: string, threads: number) {
+    removeAttacker(action: Attack, attacker: string, threads: number) {
         const newThreads = (this.attackers.get(action)?.get(attacker) ?? 0) - threads;
         if (newThreads <= 0) {
             this.attackers.get(action)?.delete(attacker);
         } else {
             this.attackers.get(action)?.set(attacker, newThreads);
+        }
+    }
+
+    attackFinished(result: AttackResult){
+        this.removeAttacker(result.action, result.host, result.threads)
+    }
+
+    private findAttack(type: string): Attack {
+        switch (type) {
+            case "single_weaken.js": // TODO: Move script-names into constants somewhere
+            case "weaken":
+                return "weaken";
+            case "single_grow.js":
+            case "grow":
+                return "grow";
+            case "single_hack.js":
+            case "hack":
+                return "hack";
+            default:
+                throw new Error("unknown attack-type");
         }
     }
 }

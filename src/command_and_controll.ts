@@ -4,7 +4,8 @@ import {Scanner} from "/cc/Scanner";
 import {Controller} from "/cc/Controller";
 import {Target} from "/cc/Target";
 import {bFormat, printTable, TableColumn} from "/util/table";
-import {actions, attackersToSkip} from "/cc/config";
+import {attacks, attackersToSkip, AttackResult} from "/cc/config";
+import {Attacker} from "/cc/Attacker";
 
 
 export async function main(ns: NS) {
@@ -27,12 +28,31 @@ export async function main(ns: NS) {
     ns.printf(' ');
 
     const targets = scanner.targets.map(s => new Target(ns, s));
-    const attackers = scanner.attackers.filter(v => !attackersToSkip.includes(v));
+    const attackers = scanner.attackers.filter(v => !attackersToSkip.includes(v)).map(s => new Attacker(ns, s));
+    for(const attacker of attackers) {
+        for(const process of ns.ps(attacker.name)) {
+            if(!["single_weaken.js", "single_hack.js", "single_grow.js"].includes(process.filename)) {
+                continue;
+            }
+            const flags: {[key: string]: string | number | boolean} = {};
+            for(let i = 0; i< process.args.length; i = i+2) {
+                flags[<string>process.args[i]] = process.args[i+1]
+            }
+            const target = targets.find(t => t.name === flags["--target"]);
+            if(!target) {
+                throw new Error("unknown target: " + flags["--target"]);
+            }
+            target.addAttacker({
+                name: attacker.name,
+                threads: process.threads,
+            }, process.filename);
+        }
+    }
     ns.printf('Starting Attack...');
     await attack(ns, targets, attackers, controller, commander);
 }
 
-async function attack(ns: NS, targets: Target[], attackers: string[], controller: Controller, commander: Commander) {
+async function attack(ns: NS, targets: Target[], attackers: Attacker[], controller: Controller, commander: Commander) {
     const results = controller.attackTargets(attackers, targets);
     for (const result of results) {
         if (result.action !== "grow") {
@@ -42,20 +62,25 @@ async function attack(ns: NS, targets: Target[], attackers: string[], controller
             }
         }
     }
+    controller.supportFaction(attackers);
     if (results
         .filter(r => r.action !== "grow")
         .length > 0) {
         ns.printf('---')
         ns.printf("Current status:")
+        ns.printf("Share power: %f", ns.getSharePower())
         printStatusTable(ns, targets)
         ns.printf('---')
     }
     await commander.listen().then((data) => {
-        const target = targets.find(t => t.name === data.target)
-        if (!target) {
-            return;
+        if((<string[]>attacks).includes(data.action)) {
+            const result = data as AttackResult;
+            const target = targets.find(t => t.name === result.target)
+            if (!target) {
+                return;
+            }
+            target.attackFinished(result)
         }
-        target.removeAttacker(data.action, data.host, data.threads)
     })
     await attack(ns, targets, attackers, controller, commander)
 }
@@ -64,21 +89,21 @@ function printStatusTable(ns: NS, targets: Target[]) {
     const cols: TableColumn[][] = [
         [
             {hTpl: '%19s', dTpl: '%19s', h: 'Host', k: {}, d: targets.map(o => o.name)},
-            {hTpl: '%4s', dTpl: '%4s', h: 'Todo', k: {}, d: targets.map(o => actions.map(a => o.actionsToExecute.includes(a) ? a.charAt(0) : " ").join(""))},
-            {hTpl: '%4s', dTpl: '%4s', h: 'Work', k: {}, d: targets.map(o => actions.map(a => o.runningActions.includes(a) ? a.charAt(0) : " ").join(""))},
+            {hTpl: '%4s', dTpl: '%4s', h: 'Todo', k: {}, d: targets.map(o => attacks.map(a => o.actionsToExecute.includes(a) ? a.charAt(0) : " ").join(""))},
+            {hTpl: '%4s', dTpl: '%4s', h: 'Work', k: {}, d: targets.map(o => attacks.map(a => o.runningActions.includes(a) ? a.charAt(0) : " ").join(""))},
         ],
         [
-            {hTpl: '%1s', dTpl: '%1s', h: '↘', k: {}, d: targets.map(o => bFormat(o.shouldExecuteAction("weaken")))},
+            {hTpl: '%1s', dTpl: '%1s', h: '↘', k: {}, d: targets.map(o => bFormat(o.shouldReceiveAttack("weaken")))},
             {hTpl: '%11s', dTpl: '%4d / %4d', h: 'threads', k: {}, d: targets.map(o => [o.isGettingWeakenedBy, o.threadsToWeaken])},
             {hTpl: '%10s', dTpl: '%5.2f / %2d', h: 'security', k: {}, d: targets.map(o => [o.securityLevel, o.minSecurityLevel])},
             {hTpl: '%7s', dTpl: '%7.2f', h: 'time(s)', k: {}, d: targets.map(o => [o.timeToWeaken])},
         ], [
-            {hTpl: '%1s', dTpl: '%1s', h: '↗', k: {}, d: targets.map(o => bFormat(o.shouldExecuteAction("grow")))},
+            {hTpl: '%1s', dTpl: '%1s', h: '↗', k: {}, d: targets.map(o => bFormat(o.shouldReceiveAttack("grow")))},
             {hTpl: '%13s', dTpl: '%5d / %5d', h: 'threads', k: {}, d: targets.map(o => [o.isGettingGrownBy, o.threadsToGrow])},
             {hTpl: '%6s', dTpl: '%5d%%', h: 'factor', k: {}, d: targets.map(o => [o.growthPct])},
             {hTpl: '%7s', dTpl: '%7.2f', h: 'time(s)', k: {}, d: targets.map(o => [o.timeToGrow])},
         ], [
-            {hTpl: '%1s', dTpl: '%1s', h: '$', k: {}, d: targets.map(o => bFormat(o.shouldExecuteAction("hack")))},
+            {hTpl: '%1s', dTpl: '%1s', h: '$', k: {}, d: targets.map(o => bFormat(o.shouldReceiveAttack("hack")))},
             {hTpl: '%11s', dTpl: '%4d / %4d', h: 'threads', k: {}, d: targets.map(o => [o.isGettingHackedBy, o.threadsToHack])},
             {hTpl: '%7s', dTpl: '%7.2f', h: 'time(s)', k: {}, d: targets.map(o => [o.timeToHack])},
             {hTpl: '%19s', dTpl: '%8.2f / %8.2f', h: 'money(m)', k: {}, d: targets.map(o => [o.availableMoney / 1000_000, o.maxMoney / 1000_000])},

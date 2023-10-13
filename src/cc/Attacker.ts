@@ -1,4 +1,7 @@
 import {NS} from "@ns";
+import {Script} from "/cc/Script";
+import {Attack} from "/cc/config";
+import {Target} from "/cc/Target";
 
 export class Attacker {
 
@@ -17,5 +20,9 @@ export class Attacker {
 
     get maxRam() {
         return this.ns.getServerMaxRam(this.name);
+    }
+
+    getAvailableThreadsFor(script: Script) {
+        return Math.floor(this.availableRam / this.ns.getScriptRam(script.name, this.name));
     }
 }

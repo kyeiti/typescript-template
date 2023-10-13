@@ -8,11 +8,15 @@ export const weakenTimeLimit = 4200;
 export const growTimeLimit = 1000;
 export const hackTimeLimit = 600;
 
-export const attackersToSkip = ["home"]
+export const attackersToSkip = [
+    "home"
+]
 
-export type Action = "weaken" | "grow" | "hack"
+export type Attack = "weaken" | "grow" | "hack"
 
-export const actions = ["grow", "weaken", "hack"] as Action[]
+export type Action = Attack | "share"
+
+export const attacks = ["grow", "weaken", "hack"] as Attack[]
 
 export type Command = {
     receiver: string,
@@ -23,23 +27,32 @@ export type Command = {
 type BaseCommandResult = {
     action: Action,
     host: string,
-    target: string,
     threads: number,
 }
 
-type WeakenResult = BaseCommandResult & {
+type BaseAttackCommandResult =  BaseCommandResult  & {
+    target: string,
+}
+
+type ShareResult = BaseCommandResult & {
+    action: "share"
+}
+
+type WeakenResult = BaseAttackCommandResult & {
     action: "weaken",
     weakenedByAbs: number,
 }
 
-type GrowResult =  BaseCommandResult & {
+type GrowResult =  BaseAttackCommandResult & {
     action: "grow",
     grownByPct: number,
 }
 
-type HackResult =  BaseCommandResult & {
+type HackResult =  BaseAttackCommandResult & {
     action: "hack",
     hackedForAbs: number,
 }
 
-export type CommandResult = WeakenResult | GrowResult | HackResult
+export type AttackResult = WeakenResult | GrowResult | HackResult
+
+export type CommandResult = AttackResult | ShareResult

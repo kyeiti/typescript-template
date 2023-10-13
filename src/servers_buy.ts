@@ -29,7 +29,7 @@ const serverNames = [
     'lemon',
     'umber',
 ];
-const ram = 2 ** 14;
+const ram = 2 ** 4;
 
 export async function main(ns: NS) {
     const c = ns.getPurchasedServers().length;
@@ -37,6 +37,7 @@ export async function main(ns: NS) {
         if(ns.getPurchasedServerCost(ram) > ns.getPlayer().money) {
             return;
         }
-        ns.purchaseServer(serverNames[i], ram);
+        const server = ns.purchaseServer(serverNames[i], ram);
+        ns.tprintf("Bought %s to %s", server, ns.formatRam(ram));
     }
 }

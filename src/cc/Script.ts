@@ -1,6 +1,7 @@
 import {Arg} from "/util/args";
 import {NS} from "@ns";
 import {Target} from "/cc/Target";
+import {Attacker} from "/cc/Attacker";
 
 export class Script {
     private static defaultTarget = "n00dles";
@@ -54,7 +55,7 @@ export class Script {
         }
     }
 
-    run(ns: NS, attacker: { name: string, threads: number }, target: Target, threadsToUse: number) {
+    run(ns: NS, attacker: Attacker, target: Target, threadsToUse: number) {
         const maxRam = ns.getServerMaxRam(attacker.name);
         const scriptRam = ns.getScriptRam(this.name, attacker.name);
         const usedRam = ns.getServerUsedRam(attacker.name)
@@ -73,7 +74,7 @@ export class Script {
             }
         }
 
-        const availableThreads = attacker.threads;
+        const availableThreads = attacker.getAvailableThreadsFor(this);
 
         let usedThreads = 0;
         const expectedThreads = threadsToUse >= availableThreads ? availableThreads : threadsToUse

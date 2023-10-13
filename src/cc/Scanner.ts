@@ -1,9 +1,22 @@
 import {NS} from "@ns";
 import {getAvailablePortCrackers} from "/util/ports";
 
+export type TreeNode = {
+    name: string
+    children: TreeNode[]
+}
+
 export class Scanner {
 
     constructor(private readonly ns: NS) {
+    }
+
+    get tree(): TreeNode {
+        const startServer = this.ns.getHostname();
+        return {
+            name: startServer,
+            children: this.treeChildren(startServer),
+        };
     }
 
     get all(): string[] {
@@ -30,6 +43,11 @@ export class Scanner {
         return this.accessible.filter((s) => this.ns.getServerMaxRam(s) > 0);
     }
 
+    get factionServers(): string[] {
+        return this.all
+            .filter((s) => this.ns.getServerMaxMoney(s) === 0)
+    }
+
     public isServerHackable(server: string) {
         if (this.ns.hasRootAccess(server)) {
             return false;
@@ -40,5 +58,20 @@ export class Scanner {
             }
         }
         return false;
+    }
+
+    private treeChildren(current: string, parent?: string): TreeNode[] {
+        const treeChildren: TreeNode[] = [];
+        const children = this.ns.scan(current);
+        for (const child of children) {
+            if (child === parent) {
+                continue
+            }
+            treeChildren.push({
+                name: child,
+                children: this.treeChildren(child, current)
+            })
+        }
+        return treeChildren;
     }
 }
