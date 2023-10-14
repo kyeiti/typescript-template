@@ -1,7 +1,7 @@
 import {NS} from "@ns";
 import {Listener} from "/port/Listener";
 import {Scanner} from "/cc/Scanner";
-import {Controller} from "/cc/Controller";
+import {ActionController} from "/cc/ActionController";
 import {Target} from "/cc/Target";
 import {printTable, TableColumn} from "/util/table";
 import {formatTime} from "/util/formatTime";
@@ -9,20 +9,24 @@ import {attackersToSkip} from "/cc/config";
 import {Attacker} from "/cc/Attacker";
 import {AttackResult, attacks} from "/cc/types";
 import {IAttacker} from "/cc/IServer";
+import {Hacker} from "/cc/Hacker";
+import {Deployer} from "/cc/Deployer";
 
 
 export async function main(ns: NS) {
     const scanner = new Scanner(ns);
     const commander = new Listener(ns)
-    const controller = new Controller(ns);
+    const controller = new ActionController();
+    const hacker = new Hacker(ns, scanner);
+    const deployer = new Deployer(ns);
 
     // ns.atExit(controller.generateStatistics)
     ns.disableLog('ALL')
 
-    hackServers(ns, controller, scanner);
+    hackServers(ns, hacker);
 
     ns.printf('Deploying...');
-    const deployResult = controller.deploy(scanner.accessible)
+    const deployResult = deployer.deployTo(scanner.accessible)
     for (const result of deployResult) {
         if (!result.success)
             ns.printf('> Failed to deployed %s to %s', result.files.join(", "), result.server);
@@ -53,7 +57,7 @@ export async function main(ns: NS) {
     await attack(ns, targets, attackers, controller, commander);
 }
 
-async function attack(ns: NS, targets: readonly Target[], attackers: readonly IAttacker[], controller: Controller, commander: Listener) {
+async function attack(ns: NS, targets: readonly Target[], attackers: readonly IAttacker[], controller: ActionController, commander: Listener) {
     const results = controller.attackTargets(attackers, targets);
     controller.supportFaction(attackers);
     if (results
@@ -107,9 +111,9 @@ function printStatusTable(ns: NS, targets: readonly Target[]) {
 }
 
 
-function hackServers(ns: NS, controller: Controller, scanner: Scanner) {
+function hackServers(ns: NS, hacker: Hacker) {
     ns.printf('Hacking servers...');
-    const hackResult = controller.hackServers(scanner.hackable)
+    const hackResult = hacker.hackServers()
     for (const server of hackResult) {
         ns.printf('> Hacked %s', server);
     }

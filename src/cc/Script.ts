@@ -8,15 +8,20 @@ export class Script implements IScript {
 
     constructor(
         public readonly name: string,
+        private readonly dependencies: string[] = [],
         public readonly args: Arg[] = []
     ) {
+    }
+
+    get neededFiles() {
+        return [this.name, ...this.dependencies]
     }
 
     deployTo(ns: NS, target: string) {
         ns.scp(this.name, target)
     }
 
-    run(ns: NS, attacker: IAttacker, target: ITarget, threadsToUse: number, additionalArgs?: readonly ScriptArg[]) {
+    run(ns: NS, attacker: IAttacker, threadsToUse: number, target?: ITarget, additionalArgs?: readonly ScriptArg[]) {
         this.deployTo(ns, attacker.name);
         const maxRam = ns.getServerMaxRam(attacker.name);
         const scriptRam = ns.getScriptRam(this.name, attacker.name);
@@ -40,7 +45,7 @@ export class Script implements IScript {
 
         let usedThreads = 0;
         const expectedThreads = threadsToUse >= availableThreads ? availableThreads : threadsToUse
-        const pid = ns.exec(this.name, attacker.name, expectedThreads, ...this.getArgsWithValues(attacker.name, expectedThreads, target.name), ...(additionalArgs ?? []));
+        const pid = ns.exec(this.name, attacker.name, expectedThreads, ...this.getArgsWithValues(attacker.name, expectedThreads, target), ...(additionalArgs ?? []));
         if (pid > 0) {
             const process = ns.ps(attacker.name).filter((p) => p.pid === pid)[0];
             usedThreads = process.threads
@@ -57,7 +62,7 @@ export class Script implements IScript {
         };
     }
 
-    private getArgsWithValues(attacker: string, threads: number, target: string | null = null) {
+    private getArgsWithValues(attacker: string, threads: number, target: ITarget | null = null) {
         const args: (string | number)[] = [];
         for (const arg of this.args) {
             args.push('--' + arg)
@@ -66,13 +71,10 @@ export class Script implements IScript {
         return args;
     }
 
-    private getValueForArg(arg: Arg, attacker: string, threads: number, target: string | null = null) {
-        if (!target) {
-            target = Script.defaultTarget;
-        }
+    private getValueForArg(arg: Arg, attacker: string, threads: number, target: ITarget | null = null) {
         switch (arg) {
             case 'target':
-                return target;
+                return target?.name ?? Script.defaultTarget;
             case 'host':
                 return attacker
             case 'threads':

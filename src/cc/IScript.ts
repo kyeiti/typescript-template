@@ -5,7 +5,7 @@ export interface ScriptResult {
     started: boolean,
     script: IScript,
     attacker: string,
-    target: ITarget,
+    target?: ITarget,
     threads: number,
     scriptRAM: number,
     usedRAM: number,
@@ -13,5 +13,6 @@ export interface ScriptResult {
 }
 
 export interface IScript {
-    run: (ns: NS, attacker: IAttacker, target: ITarget, threadsToUse: number, additionalArgs?: readonly ScriptArg[]) => ScriptResult;
+    neededFiles: string[];
+    run: (ns: NS, attacker: IAttacker, threadsToUse: number, target?: ITarget, additionalArgs?: readonly ScriptArg[]) => ScriptResult;
 }

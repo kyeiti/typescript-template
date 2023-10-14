@@ -1,33 +1,8 @@
-import {NS} from "@ns";
-import {getAvailablePortCrackers} from "/util/ports";
 import {growTimeLimit, hackTimeLimit, weakenTimeLimit} from "/cc/config";
 import {Action, Attack} from "/cc/types";
 import {IAttacker, ITarget} from "/cc/IServer";
 
-export class Controller {
-    private static filesToDeploy = ['cc/Reporter.js', 'cc/Script.js', 'cc/config.js', 'cc/PortWriter.js', 'controlled/single_hack.js', 'controlled/single_weaken.js', 'controlled/single_grow.js', 'controlled/support_faction.js'];
-
-    constructor(private readonly ns: NS) {
-    }
-
-    deploy(servers: string[]) {
-        const deployed = []
-        for (const server of servers) {
-            deployed.push({
-                server: server,
-                files: Controller.filesToDeploy,
-                success: this.ns.scp(Controller.filesToDeploy, server),
-            })
-        }
-        return deployed;
-    }
-
-    hackServers(servers: string[]) {
-        for (const server of servers) {
-            this.hackServer(server);
-        }
-        return servers
-    }
+export class ActionController {
 
     attackTargets(attackers: readonly IAttacker[], targets: readonly ITarget[]) {
         const results = [];
@@ -140,18 +115,6 @@ export class Controller {
             fulfilled: createdThreads >= requiredThreads,
             attackers: chosenAttackers,
             createdThreads: createdThreads,
-        }
-    }
-
-    private hackServer(server: string) {
-        const crackers = getAvailablePortCrackers(this.ns);
-        for (const cracker of crackers) {
-            cracker.crack(this.ns, server);
-        }
-        this.ns.nuke(server);
-        if (this.ns.getScriptRam('controlled/backdoor.js') <= this.ns.getServerMaxRam(server)) {
-            this.ns.scp('controlled/backdoor.js', server);
-//    this.ns.exec('controlled/backdoor.js', server);
         }
     }
 }

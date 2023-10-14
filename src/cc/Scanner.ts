@@ -1,5 +1,4 @@
 import {NS} from "@ns";
-import {getAvailablePortCrackers} from "/util/ports";
 
 export type TreeNode = {
     name: string
@@ -31,10 +30,6 @@ export class Scanner {
         return this.all.filter((s) => this.ns.hasRootAccess(s));
     }
 
-    get hackable(): string[] {
-        return this.all.filter((s) => this.isServerHackable(s));
-    }
-
     get targets(): string[] {
         return this.accessible.filter((s) => this.ns.getServerMaxMoney(s) > 0);
     }
@@ -46,18 +41,6 @@ export class Scanner {
     get factionServers(): string[] {
         return this.all
             .filter((s) => this.ns.getServerMaxMoney(s) === 0)
-    }
-
-    public isServerHackable(server: string) {
-        if (this.ns.hasRootAccess(server)) {
-            return false;
-        }
-        if (this.ns.getServerRequiredHackingLevel(server) <= this.ns.getHackingLevel()) {
-            if (this.ns.getServerNumPortsRequired(server) <= getAvailablePortCrackers(this.ns).length) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private treeChildren(current: string, parent?: string): TreeNode[] {

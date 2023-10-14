@@ -1,5 +1,4 @@
 import {NS, ScriptArg} from "@ns";
-import {Target} from "/cc/Target";
 import {actionScripts} from "/cc/scriptConfig";
 import {Action, Attack} from "/cc/types";
 import {IAttacker, ITarget} from "/cc/IServer";
@@ -33,7 +32,7 @@ export class Attacker implements IAttacker{
     }
 
     attack(action: Attack, target: ITarget, withThreads: number, additionalArgs?: ScriptArg[]) {
-        const result = actionScripts[action].run(this.ns, this, target, withThreads, additionalArgs ?? []);
+        const result = actionScripts[action].run(this.ns, this, withThreads, target, additionalArgs ?? []);
         if(result.threads > 0) {
             target.addAttacker(action, this, result.threads);
         }
@@ -47,7 +46,6 @@ export class Attacker implements IAttacker{
                 started: false,
                 script: actionScripts["share"],
                 attacker: this.name,
-                target: new Target(this.ns, ""),
                 threads: 0,
                 scriptRAM: 0,
                 usedRAM: 0,
@@ -57,6 +55,6 @@ export class Attacker implements IAttacker{
         if (threads === undefined) {
             threads = availableThreads;
         }
-        return actionScripts["share"].run(this.ns, this, new Target(this.ns, ""), threads > availableThreads ? availableThreads : threads)
+        return actionScripts["share"].run(this.ns, this, threads > availableThreads ? availableThreads : threads)
     }
 }
