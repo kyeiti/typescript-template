@@ -1,10 +1,10 @@
 import {PORTS} from "/cc/config";
 import {NS} from "@ns";
-import {PortListener} from "/cc/PortListener";
+import {PortListener} from "/port/PortListener";
 import {CommandResult} from "/cc/types";
 
 
-export class Commander extends PortListener<CommandResult>{
+export class Listener extends PortListener<CommandResult>{
 
     constructor(ns: NS, receivingPort = PORTS.COMMANDER_RECEIVE) {
         super(ns, receivingPort);

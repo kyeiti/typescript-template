@@ -1,5 +1,4 @@
 export const PORTS = {
-    COMMANDER_SEND: 1,
     COMMANDER_RECEIVE: 2
 }
 

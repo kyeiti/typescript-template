@@ -1,12 +1,6 @@
 import {ScriptArg} from "@ns";
 
 export type Arg = 'target' |
-    'maxMoney' |
-    'currentMoney' |
-    'minSecurity' |
-    'currentSecurity' |
-    'restartAll' |
-    'scripts' |
     'host' |
     'threads' |
     "port"

@@ -185,13 +185,13 @@ export class Target implements ITargetWithStatistics{
 
     private findAttack(type: string): Attack {
         switch (type) {
-            case "single_weaken.js": // TODO: Move script-names into constants somewhere
+            case "controlled/single_weaken.js": // TODO: Move script-names into constants somewhere
             case "weaken":
                 return "weaken";
-            case "single_grow.js":
+            case "controlled/single_grow.js":
             case "grow":
                 return "grow";
-            case "single_hack.js":
+            case "controlled/single_hack.js":
             case "hack":
                 return "hack";
             default:

@@ -1,5 +1,5 @@
 import {NS} from "@ns";
-import {Commander} from "/cc/Commander";
+import {Listener} from "/port/Listener";
 import {Scanner} from "/cc/Scanner";
 import {Controller} from "/cc/Controller";
 import {Target} from "/cc/Target";
@@ -13,7 +13,7 @@ import {IAttacker} from "/cc/IServer";
 
 export async function main(ns: NS) {
     const scanner = new Scanner(ns);
-    const commander = new Commander(ns)
+    const commander = new Listener(ns)
     const controller = new Controller(ns);
 
     // ns.atExit(controller.generateStatistics)
@@ -34,7 +34,7 @@ export async function main(ns: NS) {
     const attackers = scanner.attackers.filter(v => !attackersToSkip.includes(v)).map(s => new Attacker(ns, s));
     for(const attacker of attackers) {
         for(const process of ns.ps(attacker.name)) {
-            if(!["single_weaken.js", "single_hack.js", "single_grow.js"].includes(process.filename)) {
+            if(!["controlled/single_weaken.js", "controlled/single_hack.js", "controlled/single_grow.js"].includes(process.filename)) {
                 continue;
             }
             const flags: {[key: string]: string | number | boolean} = {};
@@ -53,7 +53,7 @@ export async function main(ns: NS) {
     await attack(ns, targets, attackers, controller, commander);
 }
 
-async function attack(ns: NS, targets: readonly Target[], attackers: readonly IAttacker[], controller: Controller, commander: Commander) {
+async function attack(ns: NS, targets: readonly Target[], attackers: readonly IAttacker[], controller: Controller, commander: Listener) {
     const results = controller.attackTargets(attackers, targets);
     controller.supportFaction(attackers);
     if (results

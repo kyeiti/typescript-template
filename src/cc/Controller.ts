@@ -5,7 +5,7 @@ import {Action, Attack} from "/cc/types";
 import {IAttacker, ITarget} from "/cc/IServer";
 
 export class Controller {
-    private static filesToDeploy = ['cc/Reporter.js', 'cc/Script.js', 'cc/config.js', 'cc/PortWriter.js', 'single_hack.js', 'single_weaken.js', 'single_grow.js', 'support_faction.js'];
+    private static filesToDeploy = ['cc/Reporter.js', 'cc/Script.js', 'cc/config.js', 'cc/PortWriter.js', 'controlled/single_hack.js', 'controlled/single_weaken.js', 'controlled/single_grow.js', 'controlled/support_faction.js'];
 
     constructor(private readonly ns: NS) {
     }
@@ -149,9 +149,9 @@ export class Controller {
             cracker.crack(this.ns, server);
         }
         this.ns.nuke(server);
-        if (this.ns.getScriptRam('backdoor.js') <= this.ns.getServerMaxRam(server)) {
-            this.ns.scp('backdoor.js', server);
-//    this.ns.exec('backdoor.js', server);
+        if (this.ns.getScriptRam('controlled/backdoor.js') <= this.ns.getServerMaxRam(server)) {
+            this.ns.scp('controlled/backdoor.js', server);
+//    this.ns.exec('controlled/backdoor.js', server);
         }
     }
 }

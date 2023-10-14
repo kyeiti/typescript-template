@@ -1,3 +1,3 @@
 export function formatTime(timeInMilliseconds: number) {
-    return new Date(timeInMilliseconds).toISOString().substr(11, 8).replace(/^[0:]+/, "")
+    return new Date(timeInMilliseconds).toISOString().substring(11, 19).replace(/^[0:]+/, "")
 }

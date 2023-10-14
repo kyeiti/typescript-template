@@ -1,7 +1,7 @@
 import {NS} from "@ns";
 import {ArgFlagArg, ArgFlags} from '/util/args'
-import {Reporter} from "/cc/Reporter";
 import {PORTS} from "/cc/config";
+import {Reporter} from "/port/Reporter";
 
 export async function main(ns: NS) {
     const argv: ArgFlags = ns.flags(<ArgFlagArg>[
@@ -11,13 +11,13 @@ export async function main(ns: NS) {
         ['port', PORTS.COMMANDER_RECEIVE]
     ]);
     const server = <string>argv['target']
-    const reporter = new Reporter(ns, server, <number>argv['port']);
+    const reporter = new Reporter(ns, <number>argv['port']);
 
-    const result = await ns.grow(server);
+    const result = await ns.weaken(server);
     reporter.tell({
-        action: "grow",
+        action: "weaken",
         target: server,
-        grownByPct: result,
+        weakenedByAbs: result,
         host: <string>argv['host'],
         threads: <number>argv['threads'],
     })
