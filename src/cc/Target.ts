@@ -1,21 +1,16 @@
 import {NS} from "@ns";
 import {
-    Action,
-    attacks,
-    Attack,
-    CommandResult,
-    AttackResult,
-    growthLimit,
     allowedRaisedSecurity,
-    attackTimeAllowedOnRaisedSecurity, pctToHack
+    attackTimeAllowedOnRaisedSecurity,
+    growthLimit,
+    pctToHack,
+    targetsToSkipForGrow,
+    targetsToSkipForHack
 } from "/cc/config";
+import {Attack, AttackResult, attacks} from "/cc/types";
+import {IAttacker, ITargetWithStatistics} from "/cc/IServer";
 
-type Attacker = {
-    name: string,
-    threads: number,
-}
-
-export class Target {
+export class Target implements ITargetWithStatistics{
     public static readonly weakenPerThread = 0.05;
     // action => name of attacker => used threads
     public attackers: Map<Attack, Map<string, number>> = new Map([
@@ -49,10 +44,6 @@ export class Target {
         return this.ns.getGrowTime(this.name) / 1000
     }
 
-    get canWeaken(): boolean {
-        return this.threadsToWeaken > 0;
-    }
-
     get isGettingWeakenedBy() {
         return [...this.attackers.get('weaken')!.values()].reduce((p, c) => p + c, 0)
     }
@@ -65,24 +56,12 @@ export class Target {
         return [...this.attackers.get('hack')!.values()].reduce((p, c) => p + c, 0)
     }
 
-    get reachedGrowthLimit() {
-        return this.availableMoney / this.maxMoney > growthLimit
-    }
-
-    get canGrow(): boolean {
-        return this.threadsToGrow > 0;
-    }
-
     get maxMoney(): number {
         return this.ns.getServerMaxMoney(this.name)
     }
 
     get availableMoney(): number {
         return this.ns.getServerMoneyAvailable(this.name)
-    }
-
-    get hasRaisedSecurity() {
-        return this.securityLevel - this.minSecurityLevel > allowedRaisedSecurity && this.timeToGrow > attackTimeAllowedOnRaisedSecurity
     }
 
     get securityLevel(): number {
@@ -120,23 +99,6 @@ export class Target {
         return Math.floor(this.ns.hackAnalyzeThreads(this.name, this.availableMoney * pctToHack)) - this.isGettingHackedBy;
     }
 
-    get hasFreeHackingSlots() {
-        return this.attackers.get('hack')?.size === 0
-    }
-
-    private getThreadsToWeaken(securityDecrease: number) {
-        const threads = securityDecrease / Target.weakenPerThread
-        return Math.ceil(threads);
-    }
-
-    private secIncreaseForHack(threads: number): number {
-        return this.ns.hackAnalyzeSecurity(threads, this.name)
-    }
-
-    private secIncreaseForGrowth(threads: number): number {
-        return this.ns.growthAnalyzeSecurity(threads, this.name);
-    }
-
     threadsNeeded(action: Attack) {
         switch (action) {
             case "hack":
@@ -164,28 +126,61 @@ export class Target {
             case "weaken":
                 return this.canWeaken;
             case "grow":
-                return !this.reachedGrowthLimit && !this.hasRaisedSecurity && this.canGrow;
+                return !this.reachedGrowthLimit && !this.hasRaisedSecurity && this.canGrow && !targetsToSkipForGrow.includes(this.name);
             case "hack":
-                return this.hasFreeHackingSlots && !this.hasRaisedSecurity && this.reachedGrowthLimit && this.threadsToHack > 0
+                return this.hasFreeHackingSlots && !this.hasRaisedSecurity && this.reachedGrowthLimit && this.threadsToHack > 0 && !targetsToSkipForHack.includes(this.name)
         }
     }
 
-    addAttacker(attacker: Attacker, action: string) {
+    addAttacker(action: string, attacker: IAttacker, threads: number) {
         const action_ = this.findAttack(action);
-        this.attackers.get(action_)?.set(attacker.name, (this.attackers.get(action_)?.get(attacker.name) ?? 0) + attacker.threads)
+        this.attackers.get(action_)?.set(attacker.name, (this.attackers.get(action_)?.get(attacker.name) ?? 0) + threads)
     }
 
-    removeAttacker(action: Attack, attacker: string, threads: number) {
+    attackFinished(result: AttackResult){
+        this.removeAttacker(result.action, result.host, result.threads)
+    }
+
+    private get hasRaisedSecurity() {
+        return this.securityLevel - this.minSecurityLevel > allowedRaisedSecurity && this.timeToGrow > attackTimeAllowedOnRaisedSecurity
+    }
+
+    private get canGrow(): boolean {
+        return this.threadsToGrow > 0;
+    }
+
+    private get canWeaken(): boolean {
+        return this.threadsToWeaken > 0;
+    }
+
+    private get reachedGrowthLimit() {
+        return this.availableMoney / this.maxMoney > growthLimit
+    }
+
+    private get hasFreeHackingSlots() {
+        return this.attackers.get('hack')?.size === 0
+    }
+
+    private getThreadsToWeaken(securityDecrease: number) {
+        const threads = securityDecrease / Target.weakenPerThread
+        return Math.ceil(threads);
+    }
+
+    private secIncreaseForHack(threads: number): number {
+        return this.ns.hackAnalyzeSecurity(threads, this.name)
+    }
+
+    private secIncreaseForGrowth(threads: number): number {
+        return this.ns.growthAnalyzeSecurity(threads, this.name);
+    }
+
+    private removeAttacker(action: Attack, attacker: string, threads: number) {
         const newThreads = (this.attackers.get(action)?.get(attacker) ?? 0) - threads;
         if (newThreads <= 0) {
             this.attackers.get(action)?.delete(attacker);
         } else {
             this.attackers.get(action)?.set(attacker, newThreads);
         }
-    }
-
-    attackFinished(result: AttackResult){
-        this.removeAttacker(result.action, result.host, result.threads)
     }
 
     private findAttack(type: string): Attack {

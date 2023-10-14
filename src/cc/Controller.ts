@@ -1,12 +1,11 @@
 import {NS} from "@ns";
 import {getAvailablePortCrackers} from "/util/ports";
-import {Script} from "/cc/Script";
-import {Target} from "/cc/Target";
-import {actionScripts, Attack, growTimeLimit, hackTimeLimit, weakenTimeLimit} from "/cc/config";
-import {Attacker} from "/cc/Attacker";
+import {growTimeLimit, hackTimeLimit, weakenTimeLimit} from "/cc/config";
+import {Action, Attack} from "/cc/types";
+import {IAttacker, ITarget} from "/cc/IServer";
 
 export class Controller {
-    private static filesToDeploy = ['cc/Receiver.js', 'cc/config.js', 'cc/PortListener.js', 'single_hack.js', 'single_weaken.js', 'single_grow.js', 'support_faction.js'];
+    private static filesToDeploy = ['cc/Reporter.js', 'cc/Script.js', 'cc/config.js', 'cc/PortWriter.js', 'single_hack.js', 'single_weaken.js', 'single_grow.js', 'support_faction.js'];
 
     constructor(private readonly ns: NS) {
     }
@@ -30,10 +29,10 @@ export class Controller {
         return servers
     }
 
-    attackTargets(attackers: Attacker[], targets: Target[]) {
+    attackTargets(attackers: readonly IAttacker[], targets: readonly ITarget[]) {
         const results = [];
 
-        for (const action of ["hack", "weaken", "grow",] as Attack[]) {
+        for (const action of ["hack", "weaken", "grow",] as readonly Attack[]) {
             let target = this.findNextTarget(action, targets);
             while (target !== null) {
                 const hackResult = this.attackTarget(action, attackers, target);
@@ -42,7 +41,7 @@ export class Controller {
                         {
                             attackers: hackResult.attackers,
                             target: target,
-                            expectedTime: target.timeToHack,
+                            expectedTime: target.timeNeeded(action),
                             action: action
                         });
                 }
@@ -55,34 +54,21 @@ export class Controller {
         return results;
     }
 
-    supportFaction(attackers: Attacker[]) {
+    supportFaction(attackers: readonly IAttacker[]) {
         for (const attacker of attackers) {
-            if (attacker.getAvailableThreadsFor(actionScripts["share"]) > 1) {
-                actionScripts["share"].run(this.ns, attacker, new Target(this.ns, ""), attacker.getAvailableThreadsFor(actionScripts["share"]))
-            }
+            attacker.shareThreadsWithFaction();
         }
-        this.executeScript(attackers, new Target(this.ns, ""), actionScripts["share"], 1_000_000);
     }
 
-    private attackScript(action: Attack) {
-        return actionScripts[action];
+    private attackTarget(action: Attack, attackers: readonly IAttacker[], target: ITarget, threads?: number) {
+        return this.executeAttack(attackers, target, action, threads ?? target.threadsNeeded(action))
     }
 
-    private attackTarget(action: Attack, attackers: Attacker[], target: Target, threads?: number) {
-        const result = this.executeScript(attackers, target, this.attackScript(action), threads ?? target.threadsNeeded(action))
-        if (result.attackers) {
-            for (const attacker of result.attackers) {
-                target.addAttacker(attacker, action);
-            }
-        }
-        return result
-    }
-
-    private findBestAttacker(attackers: Attacker[], neededThreads: number, script: Script) {
+    private findBestAttacker(attackers: readonly IAttacker[], neededThreads: number, action: Action) {
         let bestAttacker = null;
         let bestThreads = 0;
         for (const attacker of attackers) {
-            const availableThreads = attacker.getAvailableThreadsFor(script);
+            const availableThreads = attacker.getAvailableThreadsForAction(action);
             if (
                 (bestAttacker === null && availableThreads > 0) ||
                 (bestThreads > neededThreads && availableThreads > neededThreads && bestThreads > neededThreads) ||
@@ -101,7 +87,7 @@ export class Controller {
         return bestAttacker;
     }
 
-    private findNextTarget(action: Attack, targets: Target[]) {
+    private findNextTarget(action: Attack, targets: readonly ITarget[]) {
         let bestTarget = null;
         for (const target of targets) {
             // Only attack if time to action is less than 10 min
@@ -130,21 +116,21 @@ export class Controller {
         }
     }
 
-    private executeScript(attackers: Attacker[], target: Target, script: Script, requiredThreads: number) {
+    private executeAttack(attackers: readonly IAttacker[], target: ITarget, action: Attack, requiredThreads: number) {
         const chosenAttackers: {
             name: string,
             threads: number
         }[] = []
         let createdThreads = 0;
         while (createdThreads < requiredThreads) {
-            const attacker = this.findBestAttacker(attackers, requiredThreads, script)
+            const attacker = this.findBestAttacker(attackers, requiredThreads, action)
             if (attacker === null) {
                 break;
             }
-            const result = script.run(this.ns, attacker, target, requiredThreads);
+            const result = attacker.attack(action, target, requiredThreads);
             if (result.started) {
                 chosenAttackers.push({
-                    name: result.server,
+                    name: result.attacker,
                     threads: result.threads
                 });
                 createdThreads += result.threads;

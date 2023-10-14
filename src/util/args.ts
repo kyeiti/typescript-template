@@ -8,7 +8,8 @@ export type Arg = 'target' |
     'restartAll' |
     'scripts' |
     'host' |
-    'threads'
+    'threads' |
+    "port"
     ;
 
 export type ArgFlags = Partial<{[key in Arg]: ScriptArg}>

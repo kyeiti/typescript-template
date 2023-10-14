@@ -1,5 +1,4 @@
 import {NS} from "@ns";
-import {printTable, TableColumn} from "/util/table";
 
 const serverNames = [
     'red',

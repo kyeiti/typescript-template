@@ -1,9 +1,9 @@
 import {Arg} from "/util/args";
-import {NS} from "@ns";
-import {Target} from "/cc/Target";
-import {Attacker} from "/cc/Attacker";
+import {NS, ScriptArg} from "@ns";
+import {IAttacker, ITarget} from "/cc/IServer";
+import {IScript} from "/cc/IScript";
 
-export class Script {
+export class Script implements IScript {
     private static defaultTarget = "n00dles";
 
     constructor(
@@ -55,7 +55,12 @@ export class Script {
         }
     }
 
-    run(ns: NS, attacker: Attacker, target: Target, threadsToUse: number) {
+    deployTo(ns: NS, target: string) {
+        ns.scp(this.name, target)
+    }
+
+    run(ns: NS, attacker: IAttacker, target: ITarget, threadsToUse: number, additionalArgs?: readonly ScriptArg[]) {
+        this.deployTo(ns, attacker.name);
         const maxRam = ns.getServerMaxRam(attacker.name);
         const scriptRam = ns.getScriptRam(this.name, attacker.name);
         const usedRam = ns.getServerUsedRam(attacker.name)
@@ -65,7 +70,7 @@ export class Script {
             return {
                 started: false,
                 script: this,
-                server: attacker.name,
+                attacker: attacker.name,
                 target: target,
                 threads: 0,
                 scriptRAM: scriptRam,
@@ -74,11 +79,11 @@ export class Script {
             }
         }
 
-        const availableThreads = attacker.getAvailableThreadsFor(this);
+        const availableThreads = attacker.getAvailableThreadsForScript(this.name);
 
         let usedThreads = 0;
         const expectedThreads = threadsToUse >= availableThreads ? availableThreads : threadsToUse
-        const pid = ns.exec(this.name, attacker.name, expectedThreads, ...this.getArgsWithValues(ns, attacker.name, expectedThreads, target.name));
+        const pid = ns.exec(this.name, attacker.name, expectedThreads, ...this.getArgsWithValues(ns, attacker.name, expectedThreads, target.name), ...(additionalArgs ?? []));
         if (pid > 0) {
             const process = ns.ps(attacker.name).filter((p) => p.pid === pid)[0];
             usedThreads = process.threads
@@ -86,7 +91,7 @@ export class Script {
         return {
             started: true,
             script: this,
-            server: attacker.name,
+            attacker: attacker.name,
             target: target,
             threads: usedThreads,
             scriptRAM: scriptRam,

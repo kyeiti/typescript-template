@@ -1,15 +1,12 @@
 import {waitTime} from "/cc/config";
 import {NetscriptPort, NS, PortData} from "@ns";
 
-export abstract class PortListener<Sending, Receiving> {
+export abstract class PortListener<Receiving> {
+    protected readonly portToReadFrom: NetscriptPort;
 
     protected constructor(protected ns: NS,
-                          protected readonly portToWriteTo: NetscriptPort,
-                          protected readonly portToReadFrom: NetscriptPort,) {
-    }
-
-    tell(data: Sending) {
-        this.portToWriteTo.write(JSON.stringify(data));
+                          private readonly portNumber: number,) {
+        this.portToReadFrom = this.ns.getPortHandle(portNumber);
     }
 
     async listen() {
