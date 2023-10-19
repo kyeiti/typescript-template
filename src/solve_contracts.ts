@@ -5,6 +5,7 @@ import {stockTrader, stockTrader1, stockTrader3} from "/contracts/stock_trader_1
 import {arrayJumper2} from "/contracts/array-jumper";
 import {generateIpAddresses} from "/contracts/ip-address";
 import {subarraySum} from "/contracts/subarray-sum";
+import {primeFactor} from "/contracts/prime-factor";
 
 type contractTypes = "Find Largest Prime Factor" |
     "Subarray with Maximum Sum" |
@@ -74,7 +75,9 @@ export async function main(ns: NS) {
                 case "Subarray with Maximum Sum":
                     reward = ns.codingcontract.attempt(subarraySum(data), file, server)
                     break
-
+                case "Find Largest Prime Factor":
+                    reward = ns.codingcontract.attempt(primeFactor(data), file, server)
+                    break
             }
             if (reward) {
                 ns.tprintf("INFO Solved %s successfully. Reward: %s", file, reward)
