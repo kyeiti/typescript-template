@@ -3,6 +3,7 @@ import {spiralMatrix} from "/contracts/spiral_matrix";
 import {Scanner} from "/cc/Scanner";
 import {stockTrader, stockTrader1, stockTrader3} from "/contracts/stock_trader_1";
 import {arrayJumper2} from "/contracts/array-jumper";
+import {generateIpAddresses} from "/contracts/ip-address";
 
 type contractTypes = "Find Largest Prime Factor" |
     "Subarray with Maximum Sum" |
@@ -55,21 +56,19 @@ export async function main(ns: NS) {
                     reward = ns.codingcontract.attempt(stockTrader(data.length, data), file, server)
                     break;
                 case "Algorithmic Stock Trader III":
-                    // console.log(data, stockTrader3(data))
                     reward = ns.codingcontract.attempt(stockTrader3(data), file, server)
                     break;
                 case "Algorithmic Stock Trader IV":
-                    // ;
-                    // ns.tprintf("%d", stockTrader4(ns, data[0], data[1]))
-                    //     stockTrader(data[1], data[0]);
                     reward = ns.codingcontract.attempt(stockTrader(data[0], data[1]), file, server)
-                    //     reward = ns.codingcontract.attempt(stockTraderGH(data[0], data[1]), file, server)
                     break;
                 case "Array Jumping Game":
                     reward = ns.codingcontract.attempt(arrayJumper2(data) > 0 ? 1 : 0, file, server)
                     break
                 case "Array Jumping Game II":
                     reward = ns.codingcontract.attempt(arrayJumper2(data), file, server)
+                    break
+                case "Generate IP Addresses":
+                    reward = ns.codingcontract.attempt(generateIpAddresses(data), file, server)
                     break
 
             }
@@ -82,9 +81,9 @@ export async function main(ns: NS) {
     }
     // ns.tprintf("%d", arrayJumper2([1,5,4,0,1,1,0,2,3,4,3,3,1,0,4,5,2,1,3]))
 
-    // ns.tprintf("%d", stockTrader(2, [130,101,175,23,2,160,93,5,85,32,180,23,59,198,78,144,130,121,135,133,105,149,48]))
+    // ns.tprintf("%d", stockTrader(2, [130,101,175,23,2,160,93,5,85,32,180,23,59,198,78,144,130,121,135,133,105,149,48])) // 353
     // ns.tprintf("%d", stockTrader3( ns, [130,101,175,23,2,160,93,5,85,32,180,23,59,198,78,144,130,121,135,133,105,149,48]))
-    // ns.tprintf("%d", stockTrader( 2, [54,187,93,20,12,120,186,1,119,164,78,152,83,194,12,79,78,160,94,94,114,179,19,52,43,198,36,156,153,79,48,149,25,168,52,40,116,19,58,171,82,117,171,161,60,177,72,142,112]))
+    // ns.tprintf("%d", stockTrader( 2, [54,187,93,20,12,120,186,1,119,164,78,152,83,194,12,79,78,160,94,94,114,179,19,52,43,198,36,156,153,79,48,149,25,168,52,40,116,19,58,171,82,117,171,161,60,177,72,142,112])) // 379
     // ns.tprintf("%d", stockTrader3( ns, [54,187,93,20,12,120,186,1,119,164,78,152,83,194,12,79,78,160,94,94,114,179,19,52,43,198,36,156,153,79,48,149,25,168,52,40,116,19,58,171,82,117,171,161,60,177,72,142,112]))
 }
 
