@@ -85,7 +85,7 @@ export class Target implements ITargetWithStatistics{
     }
 
     get threadsToGrow(): number {
-        const moneyToGeneratePct = this.maxMoney / this.availableMoney + (this.isGettingHackedBy > 0 ? pctToHack : 0);
+        const moneyToGeneratePct = this.maxMoney / this.availableMoney * (this.isGettingHackedBy > 0 ? 1 + pctToHack : 1);
         if (this.availableMoney === 0) {
             return 1;
         }
@@ -128,7 +128,7 @@ export class Target implements ITargetWithStatistics{
             case "grow":
                 return !this.reachedGrowthLimit && !this.hasRaisedSecurity && this.canGrow && !targetsToSkipForGrow.includes(this.name);
             case "hack":
-                return this.hasFreeHackingSlots && !this.hasRaisedSecurity && this.reachedGrowthLimit && this.threadsToHack > 0 && !targetsToSkipForHack.includes(this.name)
+                return this.hasFreeHackingSlots && !this.hasRaisedSecurity && this.hasEnoughMoneyToHack && this.threadsToHack > 0 && !targetsToSkipForHack.includes(this.name)
         }
     }
 
@@ -155,6 +155,10 @@ export class Target implements ITargetWithStatistics{
 
     private get reachedGrowthLimit() {
         return this.availableMoney / this.maxMoney > growthLimit
+    }
+
+    private get hasEnoughMoneyToHack() {
+        return this.availableMoney / this.maxMoney > pctToHack + 0.05
     }
 
     private get hasFreeHackingSlots() {

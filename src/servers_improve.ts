@@ -1,6 +1,6 @@
 import {NS} from "@ns";
 
-const ram = 2 ** 19;
+const ram = 2 ** 14;
 
 export async function main(ns: NS) {
     const servers = ns.getPurchasedServers();

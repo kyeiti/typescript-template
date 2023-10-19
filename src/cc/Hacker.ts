@@ -38,7 +38,7 @@ export class Hacker {
         return servers
     }
 
-    private isServerHackable(server: string) {
+    isServerHackable(server: string) {
         if (this.ns.hasRootAccess(server)) {
             return false;
         }

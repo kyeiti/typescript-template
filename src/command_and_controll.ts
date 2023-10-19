@@ -5,7 +5,7 @@ import {ActionController} from "/cc/ActionController";
 import {Target} from "/cc/Target";
 import {printTable, TableColumn} from "/util/table";
 import {formatTime} from "/util/formatTime";
-import {attackersToSkip} from "/cc/config";
+import {attackersToSkip, supportFactions} from "/cc/config";
 import {Attacker} from "/cc/Attacker";
 import {AttackResult, attacks} from "/cc/types";
 import {IAttacker} from "/cc/IServer";
@@ -59,7 +59,9 @@ export async function main(ns: NS) {
 
 async function attack(ns: NS, targets: readonly Target[], attackers: readonly IAttacker[], controller: ActionController, commander: Listener) {
     const results = controller.attackTargets(attackers, targets);
-    controller.supportFaction(attackers);
+    if(supportFactions) {
+        controller.supportFaction(attackers);
+    }
     if (results
         .filter(r => r.action !== "grow")
         .length > 0) {
@@ -103,7 +105,7 @@ function printStatusTable(ns: NS, targets: readonly Target[]) {
             {hTpl: '%1s', dTpl: '%1s', h: '$', k: {}, d: targets.map(() => " ")},
             {hTpl: '%11s', dTpl: '%4d / %4d', h: 'threads', k: {}, d: targets.map(o => [o.isGettingHackedBy, o.threadsToHack])},
             {hTpl: '%7s', dTpl: '%7s', h: 'time(s)', k: {}, d: targets.map(o => [formatTime(o.timeToHack * 1000)])},
-            {hTpl: '%19s', dTpl: '%8.2f / %8.2f', h: 'money(m)', k: {}, d: targets.map(o => [o.availableMoney / 1000_000, o.maxMoney / 1000_000])},
+            {hTpl: '%23s', dTpl: '%10.2f / %10.2f', h: 'money(m)', k: {}, d: targets.map(o => [o.availableMoney / 1000_000, o.maxMoney / 1000_000])},
             {hTpl: '%5s', dTpl: '%5.1f', h: '$(%)', k: {}, d: targets.map(o => o.availableMoney / o.maxMoney * 100)},
         ],
     ];

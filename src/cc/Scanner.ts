@@ -1,7 +1,8 @@
 import {NS} from "@ns";
 
 export type TreeNode = {
-    name: string
+    name: string,
+    parent?: TreeNode,
     children: TreeNode[]
 }
 
@@ -12,10 +13,12 @@ export class Scanner {
 
     get tree(): TreeNode {
         const startServer = this.ns.getHostname();
-        return {
+        const startNode: TreeNode = {
             name: startServer,
-            children: this.treeChildren(startServer),
-        };
+            children: [],
+        }
+        startNode.children = this.treeChildren(startServer, startNode)
+        return startNode;
     }
 
     get all(): string[] {
@@ -40,20 +43,24 @@ export class Scanner {
 
     get factionServers(): string[] {
         return this.all
+            .filter(s => !this.ns.getPurchasedServers().includes(s))
             .filter((s) => this.ns.getServerMaxMoney(s) === 0)
     }
 
-    private treeChildren(current: string, parent?: string): TreeNode[] {
+    private treeChildren(current: string, parent?: TreeNode): TreeNode[] {
         const treeChildren: TreeNode[] = [];
         const children = this.ns.scan(current);
         for (const child of children) {
-            if (child === parent) {
+            if (child === parent?.parent?.name) {
                 continue
             }
-            treeChildren.push({
+            const node: TreeNode = {
                 name: child,
-                children: this.treeChildren(child, current)
-            })
+                parent: parent,
+                children: [],
+            }
+            node.children =this.treeChildren(child, node)
+            treeChildren.push(node)
         }
         return treeChildren;
     }
