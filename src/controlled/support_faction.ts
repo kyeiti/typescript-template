@@ -10,6 +10,9 @@ export async function main(ns: NS) {
     const reporter = new Reporter(ns, <number>argv['port']);
 
     const result = await ns.share();
+    if(reporter.hasData()) {
+        return;
+    }
     reporter.tell({
         action: "share",
         host: <string>argv['host'],

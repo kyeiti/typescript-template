@@ -9,6 +9,10 @@ export class PortWriter<Sending> {
     this.portToWriteTo = ns.getPortHandle(portNumber)
     }
 
+    hasData() {
+        return this.portToWriteTo.peek() === "NULL PORT DATA"
+    }
+
     tell(data: Sending) {
         this.portToWriteTo.write(JSON.stringify(data));
     }
