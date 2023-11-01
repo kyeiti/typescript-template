@@ -7,7 +7,7 @@ import {generateIpAddresses} from "/contracts/ip-address";
 import {subarraySum} from "/contracts/subarray-sum";
 import {primeFactor} from "/contracts/prime-factor";
 import {mergeOverlap} from "/contracts/merge-overlap";
-import {gridPaths1} from "/contracts/grid-paths";
+import {gridPaths2, gridPaths1} from "/contracts/grid-paths";
 
 type contractTypes = "Find Largest Prime Factor" |
     "Subarray with Maximum Sum" |
@@ -79,6 +79,9 @@ export async function main(ns: NS) {
                     break
                 case "Unique Paths in a Grid I":
                     reward = ns.codingcontract.attempt(gridPaths1(data), file, server);
+                    break
+                case "Unique Paths in a Grid II":
+                    reward = ns.codingcontract.attempt(gridPaths2(data), file, server);
                     break
                 case "Merge Overlapping Intervals":
                     reward = ns.codingcontract.attempt(mergeOverlap(data), file, server)
