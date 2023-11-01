@@ -5,7 +5,7 @@ import {ActionController} from "/cc/ActionController";
 import {Target} from "/cc/Target";
 import {printTable, TableColumn} from "/util/table";
 import {formatTime} from "/util/formatTime";
-import {attackersToSkip, supportFactions} from "/cc/config";
+import {attackersToSkip, supportFactions, waitTime} from "/cc/config";
 import {Attacker} from "/cc/Attacker";
 import {AttackResult, attacks} from "/cc/types";
 import {IAttacker} from "/cc/IServer";
@@ -34,32 +34,57 @@ export async function main(ns: NS) {
 
     ns.printf(' ');
 
+    // const attackers = scanner.attackers.filter(v => !attackersToSkip.includes(v)).map(s => new Attacker(ns, s));
+    // const targets = getTargets(ns, attackers, scanner)
+    ns.printf('Starting Attack...');
+    await attackRead(ns, scanner, controller);
+}
+
+function getTargets(ns: NS, attackers: readonly IAttacker[], scanner: Scanner) {
     const targets = scanner.targets.map(s => new Target(ns, s));
-    const attackers = scanner.attackers.filter(v => !attackersToSkip.includes(v)).map(s => new Attacker(ns, s));
-    for(const attacker of attackers) {
-        for(const process of ns.ps(attacker.name)) {
-            if(!["controlled/single_weaken.js", "controlled/single_hack.js", "controlled/single_grow.js"].includes(process.filename)) {
+    for (const attacker of attackers) {
+        for (const process of ns.ps(attacker.name)) {
+            if (!["controlled/single_weaken.js", "controlled/single_hack.js", "controlled/single_grow.js"].includes(process.filename)) {
                 continue;
             }
-            const flags: {[key: string]: string | number | boolean} = {};
-            for(let i = 0; i< process.args.length; i = i+2) {
-                flags[<string>process.args[i]] = process.args[i+1]
+            const flags: { [key: string]: string | number | boolean } = {};
+            for (let i = 0; i < process.args.length; i = i + 2) {
+                flags[<string>process.args[i]] = process.args[i + 1]
             }
             const targetName = <string>flags["--target"];
             const target = targets.find(t => t.name === targetName);
-            if(!target) {
+            if (!target) {
                 throw new Error("unknown target: " + flags["--target"]);
             }
             target.addAttacker(process.filename, attacker, process.threads);
         }
     }
-    ns.printf('Starting Attack...');
-    await attack(ns, targets, attackers, controller, commander);
+    return targets;
+}
+
+async function attackRead(ns: NS, scanner: Scanner, controller: ActionController) {
+    const attackers = scanner.attackers.filter(v => !attackersToSkip.includes(v)).map(s => new Attacker(ns, s));
+    const targets = getTargets(ns, attackers, scanner)
+    const results = controller.attackTargets(attackers, targets);
+    if (supportFactions) {
+        controller.supportFaction(attackers);
+    }
+    if (results
+        .filter(r => r.action !== "grow")
+        .length > 0) {
+        ns.printf('---')
+        ns.printf("Current status:")
+        ns.printf("Share power: %f", ns.getSharePower())
+        printStatusTable(ns, targets)
+        ns.printf('---')
+    }
+    await ns.sleep(waitTime)
+    await attackRead(ns, scanner, controller)
 }
 
 async function attack(ns: NS, targets: readonly Target[], attackers: readonly IAttacker[], controller: ActionController, commander: Listener) {
     const results = controller.attackTargets(attackers, targets);
-    if(supportFactions) {
+    if (supportFactions) {
         controller.supportFaction(attackers);
     }
     if (results
@@ -72,7 +97,7 @@ async function attack(ns: NS, targets: readonly Target[], attackers: readonly IA
         ns.printf('---')
     }
     await commander.listen().then((data) => {
-        if((<string[]>attacks).includes(data.action)) {
+        if ((<string[]>attacks).includes(data.action)) {
             const result = data as AttackResult;
             const target = targets.find(t => t.name === result.target)
             if (!target) {
@@ -88,24 +113,66 @@ function printStatusTable(ns: NS, targets: readonly Target[]) {
     const cols: TableColumn[][] = [
         [
             {hTpl: '%19s', dTpl: '%19s', h: 'Host', k: {}, d: targets.map(o => o.name)},
-            {hTpl: '%4s', dTpl: '%4s', h: 'Todo', k: {}, d: targets.map(o => attacks.map(a => o.actionsToExecute.includes(a) ? a.charAt(0) : " ").join(""))},
-            {hTpl: '%4s', dTpl: '%4s', h: 'Work', k: {}, d: targets.map(o => attacks.map(a => o.runningActions.includes(a) ? a.charAt(0) : " ").join(""))},
+            {
+                hTpl: '%4s',
+                dTpl: '%4s',
+                h: 'Todo',
+                k: {},
+                d: targets.map(o => attacks.map(a => o.actionsToExecute.includes(a) ? a.charAt(0) : " ").join(""))
+            },
+            {
+                hTpl: '%4s',
+                dTpl: '%4s',
+                h: 'Work',
+                k: {},
+                d: targets.map(o => attacks.map(a => o.runningActions.includes(a) ? a.charAt(0) : " ").join(""))
+            },
         ],
         [
             {hTpl: '%1s', dTpl: '%1s', h: '↘', k: {}, d: targets.map(() => " ")},
-            {hTpl: '%11s', dTpl: '%4d / %4d', h: 'threads', k: {}, d: targets.map(o => [o.isGettingWeakenedBy, o.threadsToWeaken])},
-            {hTpl: '%10s', dTpl: '%5.2f / %2d', h: 'security', k: {}, d: targets.map(o => [o.securityLevel, o.minSecurityLevel])},
+            {
+                hTpl: '%11s',
+                dTpl: '%4d / %4d',
+                h: 'threads',
+                k: {},
+                d: targets.map(o => [o.isGettingWeakenedBy, o.threadsToWeaken])
+            },
+            {
+                hTpl: '%10s',
+                dTpl: '%5.2f / %2d',
+                h: 'security',
+                k: {},
+                d: targets.map(o => [o.securityLevel, o.minSecurityLevel])
+            },
             {hTpl: '%7s', dTpl: '%7s', h: 'time(s)', k: {}, d: targets.map(o => [formatTime(o.timeToWeaken * 1000)])},
         ], [
             {hTpl: '%1s', dTpl: '%1s', h: '↗', k: {}, d: targets.map(() => " ")},
-            {hTpl: '%13s', dTpl: '%5d / %5d', h: 'threads', k: {}, d: targets.map(o => [o.isGettingGrownBy, o.threadsToGrow])},
+            {
+                hTpl: '%13s',
+                dTpl: '%5d / %5d',
+                h: 'threads',
+                k: {},
+                d: targets.map(o => [o.isGettingGrownBy, o.threadsToGrow])
+            },
             {hTpl: '%6s', dTpl: '%5d%%', h: 'factor', k: {}, d: targets.map(o => [o.growthPct])},
             {hTpl: '%7s', dTpl: '%7s', h: 'time(s)', k: {}, d: targets.map(o => [formatTime(o.timeToGrow * 1000)])},
         ], [
             {hTpl: '%1s', dTpl: '%1s', h: '$', k: {}, d: targets.map(() => " ")},
-            {hTpl: '%11s', dTpl: '%4d / %4d', h: 'threads', k: {}, d: targets.map(o => [o.isGettingHackedBy, o.threadsToHack])},
+            {
+                hTpl: '%11s',
+                dTpl: '%4d / %4d',
+                h: 'threads',
+                k: {},
+                d: targets.map(o => [o.isGettingHackedBy, o.threadsToHack])
+            },
             {hTpl: '%7s', dTpl: '%7s', h: 'time(s)', k: {}, d: targets.map(o => [formatTime(o.timeToHack * 1000)])},
-            {hTpl: '%23s', dTpl: '%10.2f / %10.2f', h: 'money(m)', k: {}, d: targets.map(o => [o.availableMoney / 1000_000, o.maxMoney / 1000_000])},
+            {
+                hTpl: '%23s',
+                dTpl: '%10.2f / %10.2f',
+                h: 'money(m)',
+                k: {},
+                d: targets.map(o => [o.availableMoney / 1000_000, o.maxMoney / 1000_000])
+            },
             {hTpl: '%5s', dTpl: '%5.1f', h: '$(%)', k: {}, d: targets.map(o => o.availableMoney / o.maxMoney * 100)},
         ],
     ];
