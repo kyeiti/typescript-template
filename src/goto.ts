@@ -11,11 +11,11 @@ export async function main(ns: NS) {
         connections.push(node.name);
         node = node.parent ?? null
     }
-    ns.tprintf("connect %s",  connections.reverse().join("; connect "))
+    connections.reverse().forEach(n => ns.singularity.connect(n))
 }
 
 export function autocomplete(data: any, args: string[]) {
-    if (args.length === 1)
+    if (args.length <= 1)
         return [...data.servers];
     return [];
 }
