@@ -1,15 +1,16 @@
 import {NS} from "@ns";
 import {spiralMatrix} from "/contracts/spiral_matrix";
 import {Scanner} from "/cc/Scanner";
-import {stockTrader, stockTrader1, stockTrader3} from "/contracts/stock_trader_1";
+import {stockTrader, stockTrader1, stockTrader3} from "/contracts/stock_trader";
 import {arrayJumper2} from "/contracts/array-jumper";
 import {generateIpAddresses} from "/contracts/ip-address";
 import {subarraySum} from "/contracts/subarray-sum";
 import {primeFactor} from "/contracts/prime-factor";
 import {mergeOverlap} from "/contracts/merge-overlap";
-import {gridPaths2, gridPaths1, shortestGridPath} from "/contracts/grid-paths";
+import {gridPaths1, gridPaths2, shortestGridPath} from "/contracts/grid-paths";
+import {minTrianglePathSum} from "/contracts/min-triangle-path-sum";
 
-type contractTypes = "Find Largest Prime Factor" |
+type ContractType = "Find Largest Prime Factor" |
     "Subarray with Maximum Sum" |
     "Total Ways to Sum" |
     "Total Ways to Sum II" |
@@ -44,7 +45,7 @@ export async function main(ns: NS) {
     // const servers = ['home'];
     for (const server of servers) {
         for (const file of ns.ls(server, '.cct')) {
-            const type = ns.codingcontract.getContractType(file, server);
+            const type = ns.codingcontract.getContractType(file, server) as ContractType;
             const data = ns.codingcontract.getData(file, server);
 
             let reward;
@@ -85,6 +86,9 @@ export async function main(ns: NS) {
                 case "Shortest Path in a Grid":
                     reward = ns.codingcontract.attempt(shortestGridPath(data), file, server)
                     break;
+                case "Minimum Path Sum in a Triangle":
+                    reward = ns.codingcontract.attempt(minTrianglePathSum(data), file, server);
+                    break;
                 case "Merge Overlapping Intervals":
                     reward = ns.codingcontract.attempt(mergeOverlap(data), file, server)
                     break
@@ -99,11 +103,5 @@ export async function main(ns: NS) {
             }
         }
     }
-    // ns.tprintf("%d", arrayJumper2([1,5,4,0,1,1,0,2,3,4,3,3,1,0,4,5,2,1,3]))
-
-    // ns.tprintf("%d", stockTrader(2, [130,101,175,23,2,160,93,5,85,32,180,23,59,198,78,144,130,121,135,133,105,149,48])) // 353
-    // ns.tprintf("%d", stockTrader3( ns, [130,101,175,23,2,160,93,5,85,32,180,23,59,198,78,144,130,121,135,133,105,149,48]))
-    // ns.tprintf("%d", stockTrader( 2, [54,187,93,20,12,120,186,1,119,164,78,152,83,194,12,79,78,160,94,94,114,179,19,52,43,198,36,156,153,79,48,149,25,168,52,40,116,19,58,171,82,117,171,161,60,177,72,142,112])) // 379
-    // ns.tprintf("%d", stockTrader3( ns, [54,187,93,20,12,120,186,1,119,164,78,152,83,194,12,79,78,160,94,94,114,179,19,52,43,198,36,156,153,79,48,149,25,168,52,40,116,19,58,171,82,117,171,161,60,177,72,142,112]))
 }
 
