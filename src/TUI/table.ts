@@ -33,10 +33,6 @@ export function printTable(printer: (fmt: string, ...args: any[]) => void, cols:
             .flatMap(c => c.d[i])))
 }
 
-export function bFormat(value: boolean) {
-    return value ? "y" : "n"
-}
-
 // @ts-ignore
 function range(stop: number): number[];
 function range(start: number, stop: number): number[];

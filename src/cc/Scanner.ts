@@ -41,12 +41,6 @@ export class Scanner {
         return this.accessible.filter((s) => this.ns.getServerMaxRam(s) > 0);
     }
 
-    get factionServers(): string[] {
-        return this.all
-            .filter(s => !this.ns.getPurchasedServers().includes(s))
-            .filter((s) => this.ns.getServerMaxMoney(s) === 0)
-    }
-
     private treeChildren(current: string, parent?: TreeNode): TreeNode[] {
         const treeChildren: TreeNode[] = [];
         const children = this.ns.scan(current);
