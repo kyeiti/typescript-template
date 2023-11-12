@@ -1,4 +1,4 @@
-import {Arg} from "/util/args";
+import {Arg} from "/cc/args";
 import {NS, ScriptArg} from "@ns";
 import {IAttacker, ITarget} from "/cc/IServer";
 import {IScript} from "/cc/IScript";

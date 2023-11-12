@@ -1,5 +1,5 @@
 import {NS} from "@ns";
-import {ArgFlagArg, ArgFlags} from '/util/args'
+import {ArgFlagArg, ArgFlags} from '/cc/args'
 import {Reporter} from "/port/Reporter";
 import {PORTS} from "/cc/config";
 
