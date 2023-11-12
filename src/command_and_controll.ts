@@ -4,7 +4,7 @@ import {Scanner} from "/cc/Scanner";
 import {ActionController} from "/cc/ActionController";
 import {Target} from "/cc/Target";
 import {printTable, TableColumn} from "/util/table";
-import {formatTime} from "/util/formatTime";
+import {formatTime} from "/util/formatters";
 import {attackersToSkip, supportFactions, waitTime} from "/cc/config";
 import {Attacker} from "/cc/Attacker";
 import {AttackResult, attacks} from "/cc/types";

@@ -1,5 +1,5 @@
 import {NS, TIX} from "@ns";
-import {formatMoney} from "/util/formatTime";
+import {formatMoney} from "/util/formatters";
 
 
 export async function main(ns: NS) {
