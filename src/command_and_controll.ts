@@ -1,5 +1,4 @@
 import {NS} from "@ns";
-import {Listener} from "/port/Listener";
 import {Scanner} from "/cc/Scanner";
 import {ActionController} from "/cc/ActionController";
 import {Target} from "/cc/Target";
@@ -7,15 +6,15 @@ import {printTable, TableColumn} from "/TUI/table";
 import {formatTime} from "/util/formatters";
 import {attackersToSkip, supportFactions, waitTime} from "/cc/config";
 import {Attacker} from "/cc/Attacker";
-import {AttackResult, attacks} from "/cc/types";
+import {attacks} from "/cc/types";
 import {IAttacker} from "/cc/IServer";
 import {Hacker} from "/cc/Hacker";
 import {Deployer} from "/cc/Deployer";
 
 
 export async function main(ns: NS) {
+    const printer = ns.printf;
     const scanner = new Scanner(ns);
-    const commander = new Listener(ns)
     const controller = new ActionController();
     const hacker = new Hacker(ns, scanner);
     const deployer = new Deployer(ns);
@@ -23,21 +22,19 @@ export async function main(ns: NS) {
     // ns.atExit(controller.generateStatistics)
     ns.disableLog('ALL')
 
-    hackServers(ns, hacker);
+    hackServers(printer, hacker);
 
-    ns.printf('Deploying...');
+    printer('Deploying...');
     const deployResult = deployer.deployTo(scanner.accessible)
     for (const result of deployResult) {
         if (!result.success)
-            ns.printf('> Failed to deployed %s to %s', result.files.join(", "), result.server);
+            printer('> Failed to deployed %s to %s', result.files.join(", "), result.server);
     }
 
-    ns.printf(' ');
-
-    // const attackers = scanner.attackers.filter(v => !attackersToSkip.includes(v)).map(s => new Attacker(ns, s));
-    // const targets = getTargets(ns, attackers, scanner)
-    ns.printf('Starting Attack...');
-    await attackRead(ns, scanner, controller);
+    printer(' ');
+    printer('Starting Attack...');
+    // await attack(ns, printer, targets, attackers, controller, commander);
+    await attackRead(ns, printer, scanner, controller);
 }
 
 function getTargets(ns: NS, attackers: readonly IAttacker[], scanner: Scanner) {
@@ -62,54 +59,29 @@ function getTargets(ns: NS, attackers: readonly IAttacker[], scanner: Scanner) {
     return targets;
 }
 
-async function attackRead(ns: NS, scanner: Scanner, controller: ActionController) {
+async function attackRead(ns: NS, printer: (fmt: string, ...args: any[]) => void, scanner: Scanner, controller: ActionController) {
     const attackers = scanner.attackers.filter(v => !attackersToSkip.includes(v)).map(s => new Attacker(ns, s));
     const targets = getTargets(ns, attackers, scanner)
-    const results = controller.attackTargets(attackers, targets);
+    controller.attackTargets(attackers, targets);
     if (supportFactions) {
         controller.supportFaction(attackers);
     }
-    if (results
-        .filter(r => r.action !== "grow")
-        .length > 0) {
-        ns.printf('---')
-        ns.printf("Current status:")
-        ns.printf("Share power: %f", ns.getSharePower())
-        printStatusTable(ns, targets)
-        ns.printf('---')
+    let processCount = 0;
+    for (const attacker of attackers) {
+        processCount += ns.ps(attacker.name).length;
     }
+    printer("%s; Processes: %d", new Date().toISOString(), processCount)
+    printer('---')
+    printer("Current status:")
+    printer("Share power: %f", ns.getSharePower())
+    printStatusTable(printer, targets)
+    printer('---')
+
     await ns.sleep(waitTime)
-    await attackRead(ns, scanner, controller)
+    await attackRead(ns, printer, scanner, controller)
 }
 
-async function attack(ns: NS, targets: readonly Target[], attackers: readonly IAttacker[], controller: ActionController, commander: Listener) {
-    const results = controller.attackTargets(attackers, targets);
-    if (supportFactions) {
-        controller.supportFaction(attackers);
-    }
-    if (results
-        .filter(r => r.action !== "grow")
-        .length > 0) {
-        ns.printf('---')
-        ns.printf("Current status:")
-        ns.printf("Share power: %f", ns.getSharePower())
-        printStatusTable(ns, targets)
-        ns.printf('---')
-    }
-    await commander.listen().then((data) => {
-        if ((<string[]>attacks).includes(data.action)) {
-            const result = data as AttackResult;
-            const target = targets.find(t => t.name === result.target)
-            if (!target) {
-                return;
-            }
-            target.attackFinished(result)
-        }
-    })
-    await attack(ns, targets, attackers, controller, commander)
-}
-
-function printStatusTable(ns: NS, targets: readonly Target[]) {
+function printStatusTable(printer: (fmt: string, ...args: any[]) => void, targets: readonly Target[]) {
     const cols: TableColumn[][] = [
         [
             {hTpl: '%19s', dTpl: '%19s', h: 'Host', k: {}, d: targets.map(o => o.name)},
@@ -176,18 +148,15 @@ function printStatusTable(ns: NS, targets: readonly Target[]) {
             {hTpl: '%5s', dTpl: '%5.1f', h: '$(%)', k: {}, d: targets.map(o => o.availableMoney / o.maxMoney * 100)},
         ],
     ];
-    printTable(ns.printf, cols)
+    printTable(printer, cols)
 }
 
 
-function hackServers(ns: NS, hacker: Hacker) {
-    ns.printf('Hacking servers...');
+function hackServers(printer: (fmt: string, ...args: any[]) => void, hacker: Hacker) {
+    printer('Hacking servers...');
     const hackResult = hacker.hackServers()
     for (const server of hackResult) {
-        ns.printf('> Hacked %s', server);
+        printer('> Hacked %s', server);
     }
-    ns.printf(' ');
-    // ns.sleep(60000).then(
-    //     () => hackServers(ns, controller, scanner)
-    // )
+    printer(' ');
 }

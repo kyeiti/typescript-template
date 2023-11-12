@@ -4,12 +4,6 @@ export type Attack = "weaken" | "grow" | "hack"
 export type Action = Attack | "share"
 export const attacks = ["grow", "weaken", "hack"] as Attack[]
 
-export type Command = {
-    receiver: string,
-    action: Action,
-    target: string,
-}
-
 type BaseCommandResult = {
     action: Action,
     host: string,
@@ -18,10 +12,6 @@ type BaseCommandResult = {
 
 type BaseAttackCommandResult =  BaseCommandResult  & {
     target: string,
-}
-
-type ShareResult = BaseCommandResult & {
-    action: "share"
 }
 
 type WeakenResult = BaseAttackCommandResult & {
@@ -40,5 +30,3 @@ type HackResult =  BaseAttackCommandResult & {
 }
 
 export type AttackResult = WeakenResult | GrowResult | HackResult
-
-export type CommandResult = AttackResult | ShareResult

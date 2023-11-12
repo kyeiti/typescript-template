@@ -2,9 +2,7 @@ import {ScriptArg} from "@ns";
 
 export type Arg = 'target' |
     'host' |
-    'threads' |
-    "port"
-    ;
+    'threads'
 
 export type ArgFlags = Partial<{[key in Arg]: ScriptArg}>
 
