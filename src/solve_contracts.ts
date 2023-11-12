@@ -49,57 +49,63 @@ export async function main(ns: NS) {
             const data = ns.codingcontract.getData(file, server);
 
             let reward;
+            let answer;
             switch (type) {
                 case "Spiralize Matrix":
-                    reward = ns.codingcontract.attempt(spiralMatrix(data), file, server)
+                    answer = spiralMatrix(data)
                     break;
                 case "Algorithmic Stock Trader I":
-                    reward = ns.codingcontract.attempt(stockTrader1(data), file, server)
+                    answer = stockTrader1(data)
                     break;
                 case "Algorithmic Stock Trader II":
-                    reward = ns.codingcontract.attempt(stockTrader(data.length, data), file, server)
+                    answer = stockTrader(data.length, data)
                     break;
                 case "Algorithmic Stock Trader III":
-                    reward = ns.codingcontract.attempt(stockTrader3(data), file, server)
+                    answer = stockTrader3(data)
                     break;
                 case "Algorithmic Stock Trader IV":
-                    reward = ns.codingcontract.attempt(stockTrader(data[0], data[1]), file, server)
+                    answer = stockTrader(data[0], data[1])
                     break;
                 case "Array Jumping Game":
-                    reward = ns.codingcontract.attempt(arrayJumper2(data) > 0 ? 1 : 0, file, server)
+                    answer = arrayJumper2(data) > 0 ? 1 : 0
                     break
                 case "Array Jumping Game II":
-                    reward = ns.codingcontract.attempt(arrayJumper2(data), file, server)
+                    answer = arrayJumper2(data)
                     break
                 case "Generate IP Addresses":
-                    reward = ns.codingcontract.attempt(generateIpAddresses(data), file, server)
+                    answer = generateIpAddresses(data)
                     break
                 case "Subarray with Maximum Sum":
-                    reward = ns.codingcontract.attempt(subarraySum(data), file, server)
+                    answer = subarraySum(data)
                     break
                 case "Unique Paths in a Grid I":
-                    reward = ns.codingcontract.attempt(gridPaths1(data), file, server);
+                    answer = gridPaths1(data)
                     break
                 case "Unique Paths in a Grid II":
-                    reward = ns.codingcontract.attempt(gridPaths2(data), file, server);
+                    answer = gridPaths2(data)
                     break
                 case "Shortest Path in a Grid":
-                    reward = ns.codingcontract.attempt(shortestGridPath(data), file, server)
+                    answer = shortestGridPath(data)
                     break;
                 case "Minimum Path Sum in a Triangle":
-                    reward = ns.codingcontract.attempt(minTrianglePathSum(data), file, server);
+                    answer = minTrianglePathSum(data)
                     break;
                 case "Merge Overlapping Intervals":
-                    reward = ns.codingcontract.attempt(mergeOverlap(data), file, server)
+                    answer = mergeOverlap(data)
                     break
                 case "Find Largest Prime Factor":
-                    reward = ns.codingcontract.attempt(primeFactor(data), file, server)
+                    answer = primeFactor(data)
                     break
             }
-            if (reward) {
-                ns.tprintf("INFO Solved %s successfully. Reward: %s", file, reward)
+            if(answer) {
+                reward = ns.codingcontract.attempt(answer, file, server)
+                if (reward) {
+                    ns.tprintf("INFO Solved %s successfully. Reward: %s", file, reward)
+                } else {
+                    ns.tprintf("ERROR Failed %s of type %s", file, type)
+                }
             } else {
-                ns.tprintf("ERROR Failed %s of type %s", file, type)
+                ns.tprintf("WARN No solution for %s of type %s", file, type)
             }
         }
     }
