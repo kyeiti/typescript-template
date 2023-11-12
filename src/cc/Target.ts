@@ -171,10 +171,16 @@ export class Target implements ITargetWithStatistics{
     }
 
     private secIncreaseForHack(threads: number): number {
+        if(threads <= 1) {
+            return 0;
+        }
         return this.ns.hackAnalyzeSecurity(threads, this.name)
     }
 
     private secIncreaseForGrowth(threads: number): number {
+        if(threads <= 1) {
+            return 0;
+        }
         return this.ns.growthAnalyzeSecurity(threads, this.name);
     }
 

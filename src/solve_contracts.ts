@@ -39,7 +39,6 @@ type contractTypes = "Find Largest Prime Factor" |
 
 
 export async function main(ns: NS) {
-    ns.codingcontract.getContractTypes().length
     const scanner = new Scanner(ns);
     const servers = scanner.all;
     // const servers = ['home'];

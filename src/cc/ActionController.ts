@@ -7,7 +7,7 @@ export class ActionController {
     attackTargets(attackers: readonly IAttacker[], targets: readonly ITarget[]) {
         const results = [];
 
-        for (const action of ["hack", "weaken", "grow",] as readonly Attack[]) {
+        for (const action of ["hack", "grow", "weaken",] as readonly Attack[]) {
             let target = this.findNextTarget(action, targets);
             while (target !== null) {
                 const hackResult = this.attackTarget(action, attackers, target);
