@@ -23,7 +23,7 @@ export function printTable(printer: (fmt: string, ...args: any[]) => void, cols:
     printer(headTpl2, ...cols
         .flat()
         .map(c => c.hTpl)
-        .map(s => s.match(/^%(?<length>\d+).+$/))
+        .map(s => s.match(/^%-?(?<length>\d+).+$/))
         .map(m => (m?.groups?? {'length': '0'})['length'])
         .map(s => parseInt(s))
         .map(i => '-'.repeat(i)))

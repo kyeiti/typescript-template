@@ -1,5 +1,5 @@
 import {NS} from "@ns";
-import {printTable} from "/util/table";
+import {printTable} from "/TUI/table";
 
 export async function main(ns: NS) {
   const locations = ns.infiltration.getPossibleLocations();
