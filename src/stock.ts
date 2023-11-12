@@ -29,19 +29,31 @@ function play(stock: TIX, symbols: readonly string[], printer: (format: string, 
                     printer("Bought %s for %s", symbol, formatMoney(buy * (maxShares - longStock)))
                 }
             }
-            if (shortGain > 0) {
+            if (shortStock > 0) {
                 const sold = stock.sellShort(symbol, maxShares)
                 if (sold > 0) {
-                    printer("Sold %s (short) for %d profit", symbol, formatMoney(shortGain - shortPrice))
+                    const gain = shortGain - shortPrice;
+                    const formatted= formatMoney(gain);
+                    if(gain > 0) {
+                        printer("INFO Sold %s (short) for %s profit", symbol, formatted)
+                    } else {
+                        printer("FAIL Sold %s (short) for %s loss", symbol, formatted)
+                    }
                 }
             }
         } else {
             // const buy = stock.buyShort(symbol, maxShares)
             // printer("Bought %s (short) for %d", symbol, buy)
-            if (longStock && longGain > longPrice) {
+            if (longStock > 0) {
                 const sold = stock.sellStock(symbol, longStock)
                 if (sold > 0) {
-                    printer("Sold %s for %s profit", symbol, formatMoney(longGain - longPrice))
+                    const gain = longGain - longPrice;
+                    const formatted= formatMoney(gain);
+                    if(gain > 0) {
+                        printer("INFO Sold %s for %s profit", symbol, formatted)
+                    } else {
+                        printer("FAIL Sold %s for %s loss", symbol, formatted)
+                    }
                 }
             }
         }
