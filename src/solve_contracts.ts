@@ -11,6 +11,7 @@ import {gridPaths1, gridPaths2, shortestGridPath} from "/contracts/grid-paths";
 import {minTrianglePathSum} from "/contracts/min-triangle-path-sum";
 import {colorGraph} from "/contracts/2-color-graph";
 import {encryptCaesar} from "/contracts/encryption-caesar";
+import {encryptVigenere} from "/contracts/encryption-vigenere";
 
 type ContractType = "Find Largest Prime Factor" |
     "Subarray with Maximum Sum" |
@@ -103,6 +104,9 @@ export async function main(ns: NS) {
                     break
                 case "Encryption I: Caesar Cipher":
                     answer = encryptCaesar(data[0], data[1])
+                    break
+                case "Encryption II: Vigenère Cipher":
+                    answer = encryptVigenere(data[0], data[1])
                     break
             }
             if(answer) {
