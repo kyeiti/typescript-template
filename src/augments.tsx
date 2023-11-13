@@ -14,7 +14,7 @@ const wantedTags: AugmentationTag[] = [
     "focus",
     "skill",
     "exp",
-    "hgw",
+    // "hgw",
     // // "cha",
     // "port cracker",
     // // "hgw",
@@ -24,24 +24,17 @@ const wantedTags: AugmentationTag[] = [
 const priceMult = 1.9;
 
 const augmentationsToSkip: AugmentationName[] = [
-    // "Neuralstimulator",
-    // "PCMatrix",
-    // "Cranial Signal Processors - Gen III",
-    // "Neural-Retention Enhancement",
-    // "Neurotrainer II",
-    // "CRTX42-AA Gene Modification",
-    // "Cranial Signal Processors - Gen II",
-    // "Cranial Signal Processors - Gen I",
-    // "Embedded Netburner Module",
-    // "CashRoot Starter Kit",
-    // "Artificial Synaptic Potentiation",
-    // "Neuroreceptor Management Implant",
-    // "DataJack",
-    // "Nanofiber Weave",
+    "Enhanced Myelin Sheathing",
+    "Embedded Netburner Module Core Implant",
+    "nextSENS Gene Modification",
+    "Neuronal Densification",
+    "Enhanced Social Interaction Implant",
+    "The Black Hand",
 ]
 
 const flags:  [string, string | number | boolean | string[]][] = [
     ['buy', false],
+    ['only-enough-rep', false],
     ['unavailable', false],
 ]
 
@@ -54,6 +47,7 @@ export async function main(ns: NS) {
     const argv = ns.flags(flags);
     const buy = argv['buy'] as boolean;
     const unavailable = argv['unavailable'] as boolean;
+    const onlyEnoughRep = argv['only-enough-rep'] as boolean;
     if(unavailable) {
         showUnavailable(ns);
         return;
@@ -64,7 +58,8 @@ export async function main(ns: NS) {
         .filter(p => p.wanted || p.bought)
         .filter(p => p.available)
         .filter(p => !p.installed)
-        .sort((a, b) => spaceShipOp(a, b, o => o.augmentation.basePrice))
+        .filter(p => !onlyEnoughRep || p.canBeBoughtAt.length > 0)
+        .sort((a, b) => spaceShipOp(a, b, o => o.price))
         .sort((a, b) => spaceShipOp(a, b, o => o.bought))
         .reverse()
     augmentationsToGet.forEach(a => {

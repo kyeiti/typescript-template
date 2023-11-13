@@ -1,6 +1,6 @@
 import {NS} from "@ns";
 import {Augmentation, Augmentations, AugmentationTag} from "/util/Augmentations/Augmentations";
-import {Faction, FactionName} from "/util/Factions/Faction";
+import {FactionName} from "/util/Factions/Faction";
 
 export type EvaluatedAugmentation = {
     available: boolean,
@@ -9,6 +9,7 @@ export type EvaluatedAugmentation = {
     bought: boolean,
     order: number,
     price: number,
+    missingPrerequisites: Augmentation[],
     canBeBoughtAt: FactionName[],
     augmentation: Augmentation
 }
@@ -48,13 +49,22 @@ export function scanAugmentations(ns: NS, wantedTags: AugmentationTag[] = [], un
             installed: installedAugs.has(a.name),
             bought: boughtAugs.includes(a.name),
             canBeBoughtAt: canBeBoughtAt,
+            missingPrerequisites: [],
             order: -1,
-            price: 0,
+            price: a.basePrice,
         }
     });
     potentialAugmentations.forEach(a => {
             if (a.augmentation.preRequisites.length > 0) {
                 a.available = a.available && potentialAugmentations.filter(v => a.augmentation.preRequisites.includes(v.augmentation)).length === a.augmentation.preRequisites.length
+                a.missingPrerequisites = a.augmentation.preRequisites.filter(v => {
+                    const evaluatedAugmentation = potentialAugmentations.find(p => p.augmentation === v);
+                    if(!evaluatedAugmentation) {
+                        return false;
+                    }
+                    return !evaluatedAugmentation.installed && !evaluatedAugmentation.bought
+                })
+                a.price = (a.augmentation.basePrice + a.missingPrerequisites.reduce((p,c)=> p + c.basePrice,0)) / (a.missingPrerequisites.length + 1)
             }
         }
     );
