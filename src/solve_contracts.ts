@@ -12,6 +12,7 @@ import {minTrianglePathSum} from "/contracts/min-triangle-path-sum";
 import {colorGraph} from "/contracts/2-color-graph";
 import {encryptCaesar} from "/contracts/encryption-caesar";
 import {encryptVigenere} from "/contracts/encryption-vigenere";
+import {rleCompression} from "/contracts/compression-rle";
 
 type ContractType = "Find Largest Prime Factor" |
     "Subarray with Maximum Sum" |
@@ -107,6 +108,9 @@ export async function main(ns: NS) {
                     break
                 case "Encryption II: Vigenère Cipher":
                     answer = encryptVigenere(data[0], data[1])
+                    break
+                case "Compression I: RLE Compression":
+                    answer = rleCompression(data)
                     break
             }
             if(answer) {
