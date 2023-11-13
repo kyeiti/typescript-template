@@ -9,6 +9,7 @@ import {primeFactor} from "/contracts/prime-factor";
 import {mergeOverlap} from "/contracts/merge-overlap";
 import {gridPaths1, gridPaths2, shortestGridPath} from "/contracts/grid-paths";
 import {minTrianglePathSum} from "/contracts/min-triangle-path-sum";
+import {colorGraph} from "/contracts/2-color-graph";
 
 type ContractType = "Find Largest Prime Factor" |
     "Subarray with Maximum Sum" |
@@ -95,6 +96,9 @@ export async function main(ns: NS) {
                     break
                 case "Find Largest Prime Factor":
                     answer = primeFactor(data)
+                    break
+                case "Proper 2-Coloring of a Graph":
+                    answer = colorGraph(data[0], data[1])
                     break
             }
             if(answer) {
