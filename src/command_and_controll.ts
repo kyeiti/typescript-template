@@ -8,32 +8,16 @@ import {attackersToSkip, supportFactions, waitTime} from "/cc/config";
 import {Attacker} from "/cc/Attacker";
 import {attacks} from "/cc/types";
 import {IAttacker} from "/cc/IServer";
-import {Hacker} from "/cc/Hacker";
-import {Deployer} from "/cc/Deployer";
-
 
 export async function main(ns: NS) {
     const printer = ns.printf;
     const scanner = new Scanner(ns);
     const controller = new ActionController();
-    const hacker = new Hacker(ns, scanner);
-    const deployer = new Deployer(ns);
 
-    // ns.atExit(controller.generateStatistics)
     ns.disableLog('ALL')
-
-    hackServers(printer, hacker);
-
-    printer('Deploying...');
-    const deployResult = deployer.deployTo(scanner.accessible)
-    for (const result of deployResult) {
-        if (!result.success)
-            printer('> Failed to deployed %s to %s', result.files.join(", "), result.server);
-    }
 
     printer(' ');
     printer('Starting Attack...');
-    // await attack(ns, printer, targets, attackers, controller, commander);
     await attackRead(ns, printer, scanner, controller);
 }
 
@@ -149,14 +133,4 @@ function printStatusTable(printer: (fmt: string, ...args: any[]) => void, target
         ],
     ];
     printTable(printer, cols)
-}
-
-
-function hackServers(printer: (fmt: string, ...args: any[]) => void, hacker: Hacker) {
-    printer('Hacking servers...');
-    const hackResult = hacker.hackServers()
-    for (const server of hackResult) {
-        printer('> Hacked %s', server);
-    }
-    printer(' ');
 }

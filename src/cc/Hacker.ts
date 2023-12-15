@@ -1,5 +1,6 @@
 import {NS} from "@ns";
 import {Scanner} from "/cc/Scanner";
+import {connect} from "/util/connect";
 
 type portCrackerFunction = {
     [K in keyof NS]: NS[K] extends (server: string) => void ? K : never;
@@ -43,27 +44,47 @@ export class Hacker {
             return false;
         }
         if (this.ns.getServerRequiredHackingLevel(server) <= this.ns.getHackingLevel()) {
-            if (this.ns.getServerNumPortsRequired(server) <= this.getAvailablePortCrackers(this.ns).length) {
+            while (this.ns.getServerNumPortsRequired(server) > this.getAvailablePortCrackers().length && this.purchaseNextPortCracker()) ;
+            if (this.ns.getServerNumPortsRequired(server) <= this.getAvailablePortCrackers().length) {
                 return true;
             }
         }
         return false;
     }
 
+    public async installBackdoors(servers: string[]|null = null) {
+        if (servers === null) {
+            servers = this.scanner.accessible
+        }
+        const backdoorLessServers = servers.filter(s => this.ns.hasRootAccess(s) && !this.ns.getServer(s).backdoorInstalled && !this.ns.getServer(s).purchasedByPlayer)
+        for (const server of backdoorLessServers) {
+            connect(this.ns, server);
+            await this.ns.singularity.installBackdoor();
+        }
+        this.ns.singularity.connect("home");
+    }
+
     private hackServer(server: string) {
-        const crackers = this.getAvailablePortCrackers(this.ns);
+        const crackers = this.getAvailablePortCrackers();
         for (const cracker of crackers) {
             cracker.crack(this.ns, server);
         }
         this.ns.nuke(server);
-        if (this.ns.getScriptRam('controlled/backdoor.js') <= this.ns.getServerMaxRam(server)) {
-            this.ns.scp('controlled/backdoor.js', server);
-//    this.ns.exec('controlled/backdoor.js', server);
-        }
     }
 
-    /** @param {NS} ns */
-    private getAvailablePortCrackers(ns: NS) {
-        return this.PORT_CRACKERS.filter(cracker => ns.fileExists(cracker.requiredFile));
+    private purchaseNextPortCracker() {
+        const missingCrackers = this.PORT_CRACKERS.filter(cracker => !this.ns.fileExists(cracker.requiredFile))
+        if (missingCrackers.length === 0) {
+            return false;
+        }
+        if (!this.ns.singularity.purchaseTor()) {
+            return false;
+        }
+        return this.ns.singularity.purchaseProgram(missingCrackers[0].requiredFile);
+
+    }
+
+    private getAvailablePortCrackers() {
+        return this.PORT_CRACKERS.filter(cracker => this.ns.fileExists(cracker.requiredFile));
     }
 }

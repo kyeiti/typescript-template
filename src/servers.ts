@@ -80,11 +80,11 @@ function purchaseServers(ns: NS, ramMultiplier: number) {
     for (let i = c; i < 25; i++) {
         const cost = ns.getPurchasedServerCost(ram);
         if (cost > ns.getPlayer().money) {
-            ns.tprintf("ERROR Not enough money to purchase %s with %s RAM - required money: %s", serverNames[i], ns.formatRam(ram), cost);
+            ns.tprintf("ERROR Not enough money to purchase %s with %s RAM - required money: %s", serverNames[i], ns.formatRam(ram), formatMoney(cost));
             return;
         }
         const server = ns.purchaseServer(serverNames[i], ram);
-        ns.tprintf("INFO Bought %s with %s RAM for %s", server, ns.formatRam(ram), cost);
+        ns.tprintf("INFO Bought %s with %s RAM for %s", server, ns.formatRam(ram), formatMoney(cost));
     }
 }
 

@@ -33,6 +33,10 @@ export class Scanner {
         return this.all.filter((s) => this.ns.hasRootAccess(s));
     }
 
+    get inaccessible(): string[] {
+        return this.all.filter((s) => !this.ns.hasRootAccess(s));
+    }
+
     get targets(): string[] {
         return this.accessible.filter((s) => this.ns.getServerMaxMoney(s) > 0);
     }

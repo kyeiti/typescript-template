@@ -18,7 +18,7 @@ export class Script implements IScript {
     }
 
     deployTo(ns: NS, target: string) {
-        ns.scp(this.name, target)
+        ns.scp(this.neededFiles, target)
     }
 
     run(ns: NS, attacker: IAttacker, threadsToUse: number, target?: ITarget, additionalArgs?: readonly ScriptArg[]) {
@@ -28,7 +28,12 @@ export class Script implements IScript {
         const usedRam = ns.getServerUsedRam(attacker.name)
         const availableRam = maxRam - usedRam;
 
-        if (maxRam < scriptRam) {
+        const availableThreads = attacker.getAvailableThreadsForScript(this.name);
+
+        let usedThreads = 0;
+        const expectedThreads = threadsToUse >= availableThreads ? availableThreads : threadsToUse
+
+        if (expectedThreads < 1) {
             return {
                 started: false,
                 script: this,
@@ -41,10 +46,6 @@ export class Script implements IScript {
             }
         }
 
-        const availableThreads = attacker.getAvailableThreadsForScript(this.name);
-
-        let usedThreads = 0;
-        const expectedThreads = threadsToUse >= availableThreads ? availableThreads : threadsToUse
         const pid = ns.exec(this.name, attacker.name, expectedThreads, ...this.getArgsWithValues(attacker.name, expectedThreads, target), ...(additionalArgs ?? []));
         if (pid > 0) {
             const process = ns.ps(attacker.name).filter((p) => p.pid === pid)[0];

@@ -332,7 +332,7 @@ const GrapheneBionicLegsUpgrade: Augmentation = {
     factions: [FactionNames.MegaCorp, FactionNames.ECorp, FactionNames.FulcrumSecretTechnologies],
     basePrice: 4.5e9,
     preRequisites: [BionicLegs],
-    requiredReputation: 750e6,
+    requiredReputation: 750e3,
     effects: "+150 agi skill",
     tags: ["skill", "agi", "combat"]
 }
@@ -635,6 +635,15 @@ export const Augmentations: readonly Augmentation[] = [
         tags: ["hack", "str", "def", "dex", "agi", "cha", "skill", "combat"],
         preRequisites: [],
         factions: [FactionNames.ClarkeIncorporated],
+    },
+    {
+        name: "HemoRecirculator",
+        requiredReputation: 10e3,
+        basePrice: 45e6,
+        effects: "+8 combat skill",
+        tags: ["str", "def", "dex", "agi", "skill", "combat"],
+        preRequisites: [],
+        factions: [FactionNames.Tetrads, FactionNames.TheDarkArmy, FactionNames.TheSyndicate]
     },
     {
         name: "OmniTek InfoLoad",
@@ -1112,7 +1121,7 @@ export const Augmentations: readonly Augmentation[] = [
         factions: [FactionNames.BitRunners, FactionNames.NiteSec],
         basePrice: 45e6,
         preRequisites: [],
-        requiredReputation: 70e3,
+        requiredReputation: 10e3,
         effects: "+15 skill exp",
         tags: ["hack", "exp", "agi", "dex", "def", "str", "skill", "combat"]
     },

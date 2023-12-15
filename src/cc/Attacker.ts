@@ -3,6 +3,7 @@ import {actionScripts} from "/cc/scriptConfig";
 import {Action, Attack} from "/cc/types";
 import {IAttacker, ITarget} from "/cc/IServer";
 import {ScriptResult} from "/cc/IScript";
+import {Script} from "/cc/Script";
 
 export class Attacker implements IAttacker{
 
@@ -41,7 +42,10 @@ export class Attacker implements IAttacker{
 
     shareThreadsWithFaction(threads?: number): ScriptResult {
         const availableThreads = this.getAvailableThreadsForAction("share")
-        if(availableThreads < 1) {
+        if (threads === undefined) {
+            threads = availableThreads;
+        }
+        if(threads < 1) {
             return {
                 started: false,
                 script: actionScripts["share"],
@@ -51,9 +55,6 @@ export class Attacker implements IAttacker{
                 usedRAM: 0,
                 remainingRAM: this.availableRam,
             }
-        }
-        if (threads === undefined) {
-            threads = availableThreads;
         }
         return actionScripts["share"].run(this.ns, this, threads > availableThreads ? availableThreads : threads)
     }

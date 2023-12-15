@@ -21,9 +21,9 @@ function printChildren(ns: NS, children: TreeNode[], hacker: Hacker, pre = "") {
         if (server.purchasedByPlayer) {
             status = "#"
         } else if (server.backdoorInstalled) {
-            status = "*";
+            status = "◉";
         } else if (server.hasAdminRights) {
-            status = "°"
+            status = "○"
         } else if (hacker.isServerHackable(server.hostname)) {
             status = "!"
         }

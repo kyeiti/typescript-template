@@ -9,7 +9,7 @@ export async function main(ns: NS) {
     ns.disableLog("sleep")
     while (true) {
         play(stock, ns, symbols, ns.printf)
-        await ns.sleep(1000)
+        await stock.nextUpdate()
     }
 }
 
@@ -26,10 +26,10 @@ function play(stock: TIX, ns: NS, symbols: readonly string[], printer: (format: 
         const longGain = stock.getSaleGain(symbol, longStock, "Long")
         const longPrice = stock.getAskPrice(symbol)
         const shortPrice = stock.getBidPrice(symbol)
-        const purchasableLongAmount = Math.min(Math.floor((player.money -commissionFee) / longPrice), maxShares);
-        const purchasableShortAmount = Math.min(Math.floor((player.money-commissionFee) / shortPrice), maxShares);
+        const purchasableLongAmount = Math.min(Math.floor((player.money - commissionFee) / longPrice), maxShares);
+        const purchasableShortAmount = Math.min(Math.floor((player.money - commissionFee) / shortPrice), maxShares);
         if (stock.getForecast(symbol) > 0.5) {
-            if (purchasableLongAmount > 0) {
+            if (purchasableLongAmount > 0 && purchasableLongAmount * longPrice > 1e9) {
                 const buy = stock.buyStock(symbol, purchasableLongAmount - longStock)
                 if (buy > 0) {
                     printer("Bought %s for %s", symbol, formatMoney(buy * (purchasableLongAmount - longStock) + commissionFee))
@@ -39,8 +39,8 @@ function play(stock: TIX, ns: NS, symbols: readonly string[], printer: (format: 
                 const sold = stock.sellShort(symbol, maxShares)
                 if (sold > 0) {
                     const gain = shortGain - shortPaid;
-                    const formatted= formatMoney(gain);
-                    if(gain > 0) {
+                    const formatted = formatMoney(gain);
+                    if (gain > 0) {
                         printer("INFO Sold %s (short) for %s profit", symbol, formatted)
                     } else {
                         printer("FAIL Sold %s (short) for %s loss", symbol, formatted)
@@ -58,8 +58,8 @@ function play(stock: TIX, ns: NS, symbols: readonly string[], printer: (format: 
                 const sold = stock.sellStock(symbol, longStock)
                 if (sold > 0) {
                     const gain = longGain - longPaid;
-                    const formatted= formatMoney(gain);
-                    if(gain > 0) {
+                    const formatted = formatMoney(gain);
+                    if (gain > 0) {
                         printer("INFO Sold %s for %s profit", symbol, formatted)
                     } else {
                         printer("FAIL Sold %s for %s loss", symbol, formatted)

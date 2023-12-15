@@ -9,7 +9,7 @@ export const growthLimit = 0.99;
 export const pctToHack = 0.20;
 export const attackTimeAllowedOnRaisedSecurity = 1 // seconds
 
-export const supportFactions = false;
+export const supportFactions = true;
 
 export const attackersToSkip: readonly string[] = [
     "home"

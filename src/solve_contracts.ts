@@ -113,7 +113,7 @@ export async function main(ns: NS) {
                     answer = rleCompression(data)
                     break
             }
-            if(answer) {
+            if(answer !== undefined) {
                 reward = ns.codingcontract.attempt(answer, file, server)
                 if (reward) {
                     ns.tprintf("INFO Solved %s successfully. Reward: %s", file, reward)

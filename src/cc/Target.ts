@@ -158,7 +158,7 @@ export class Target implements ITargetWithStatistics{
     }
 
     private get hasEnoughMoneyToHack() {
-        return this.availableMoney / this.maxMoney > pctToHack + 0.05
+        return this.availableMoney / this.maxMoney > (1 - pctToHack) + 0.05
     }
 
     private get hasFreeHackingSlots() {

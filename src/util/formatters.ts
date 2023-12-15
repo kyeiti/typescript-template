@@ -3,7 +3,7 @@ export function formatTime(timeInMilliseconds: number) {
 }
 
 export function formatBigNumber(num: number) {
-    const symbols = [" ", "k", "m", "b", "t", "q", "Q"]
+    const symbols = [" ", "k", "m", "b", "t", "q", "Q", "s", "S", "o", "n"]
     let i: number;
     for (i = 0; (num / 1000 >= 1 || num / 1000 < -1) && i < symbols.length; i++) {
         num = num / 1000;
